@@ -1,0 +1,16 @@
+# Configuration file for src/geneqv.pl
+
+@scalars =  ("a","b","c","d","e","a","b","c","d","e","1","0");
+@matrices = ("A","B","C","D","E","A","B","C","D","E","I","O");
+@vectors =  ("v","w","x","y","z","v","w","x","y","z","o");
+
+$functions = "[+\\-*/int][smv]";
+$rootProbChildSubtree = 0.94;
+$childProbChildSubtreeDelta = -0.19;
+$axioms = "(Cancel|Noop|Double|Multzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)";
+$genNotEq = 0;
+$numSamples = 1000;
+$maxTokens = 100;
+$maxOutputTokens = 50;
+@axNumFrac = (0,0.1,0.1,0.1,0.1,0.1,0.19,0.3,0.4,0.6,1.0);
+$multipass = 1;
