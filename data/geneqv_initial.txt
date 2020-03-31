@@ -12,5 +12,5 @@ $genNotEq = 0;
 $numSamples = 10000;
 $maxTokens = 100;
 $maxOutputTokens = 50;
-@axNumFrac = (0,0.007,0.009,0.016,0.033,0.078,0.19,0.3,0.4,0.6,1.0);
+@axNumFrac = (0,0.006,0.009,0.016,0.033,0.078,0.19,0.3,0.4,0.6,1.0);
 $multipass = 0;

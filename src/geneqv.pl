@@ -552,7 +552,7 @@ sub GenerateProgBfromProgA {
         return "O";
     }
 
-    if (rand() < 0.4 * $pr && ($op eq "*v" && ($left =~/[oO0]/ || $right =~/[oO0]/))
+    if (rand() < 0.4 * $pr && ($op eq "*v" && ($left =~/^[oO0]/ || $right =~/^[oO0]/))
                         && $axioms =~/Multzero/) {
         $transform .= $path."Multzero ";
         return "o";
@@ -744,35 +744,29 @@ while ($samples < $numSamples) {
     my $progMid;
     my $transformMid;
     next if exists $progs{$progA};
-    $progs{$progA} = 1;
     $progTmp =~s/(.)/$1 /g;
     $progTmp =~s/\s+/ /g;
     $progTmp =~s/(\( .) (.)/$1$2/g;
     next if (int(split / /,$progTmp) > ($maxTokens/2 + int(@axNumFrac)));
     my $progB = GenerateProgBfromProgA($progA,"");
-    next if exists $progs{$progB};
-    $progs{$progB} = 1;
     if ($multipass) {
-        $axioms = "(Cancel|Noop|Double|Multzero)";
+        if ($simplify) {
+            $axioms = "(Cancel|Noop|Double|Multzero)";
+            $progB = GenerateProgBfromProgA($progB,"");
+            $axioms = $axiomsOrig;
+        }
         $progB = GenerateProgBfromProgA($progB,"");
-        next if exists $progs{$progB};
-        $progs{$progB} = 1;
-        $axioms = $axiomsOrig;
-        $progB = GenerateProgBfromProgA($progB,"");
-        next if exists $progs{$progB};
-        $progs{$progB} = 1;
+        next if $progB eq $progA;
         $progMid = $progB;
         $transformMid = $transform;
         $progB = GenerateProgBfromProgA($progB,"");
-        next if exists $progs{$progB};
-        $progs{$progB} = 1;
-    }
-    if (int(split /[A-Z]/,$transform)-1 < 4 && $simplify && rand() < 0.7) {
-        $axioms = "(Cancel|Noop|Double|Multzero)";
-        $progB = GenerateProgBfromProgA($progB,"");
-        next if exists $progs{$progB};
-        $progs{$progB} = 1;
-        $axioms = $axiomsOrig;
+        next if $progB eq $progA;
+        if ((int(split /[A-Z]/,$transform)-1 < 4 || rand() < 0.7) && $simplify) {
+            $axioms = "(Cancel|Noop|Double|Multzero)";
+            $progB = GenerateProgBfromProgA($progB,"");
+            $axioms = $axiomsOrig;
+        }
+        next if $progB eq $progA;
     }
     if ($genNotEq) {
       if ((rand() < 0.01 && !($progA =~/b/) && $progB =~s/a/b/) || 
@@ -790,6 +784,11 @@ while ($samples < $numSamples) {
     }
     $transform =~ s/^.*Not_equal.*$/Not_equal/;
     $transform =~ s/\s+$//;
+    next if !$transform;
+    my $axiomNum = int(split /[A-Z]/,$transform)-1;
+    next if $axiomNum >= int(@axNumFrac);
+    next if (!($transform =~/Not_equal/) && (rand() > $axNumFrac[$axiomNum]));
+    $progs{$progA} = 1;
     $progA =~s/(.)/$1 /g;
     $progA =~s/\s+/ /g;
     $progA =~s/(\( .) (.)/$1$2/g;
@@ -798,19 +797,22 @@ while ($samples < $numSamples) {
     $progB =~s/(\( .) (.)/$1$2/g;
     my $all = "X $progA Y $progB Z $transform";
     $all =~s/\s+/ /g;
-    my $axiomNum = int(split /[A-Z]/,$transform)-1;
-    if ($transform && (int(split / /,$progA) + int(split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens) && ($axiomNum < int(@axNumFrac)) && (($all =~/Not_equal/) || (rand() < $axNumFrac[$axiomNum]))) {
+    if ((int(split / /,$progA) + int(split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens)) {
         $samples+=1;
         print $all."\n";
     }
-    if ($multipass && !$transform=~/Not_equal/) {
-        $transform =~s/$transformMid//;
+    if ($multipass && !($transform=~/Not_equal/) && !(exists $progs{$progMid})) {
+        $transformMid =~ s/\s+$//;
+        $transform =~s/^$transformMid\s*//;
         $progA = $progMid;
         $progA =~s/(.)/$1 /g;
         $progA =~s/\s+/ /g;
         $progA =~s/(\( .) (.)/$1$2/g;
         $axiomNum = int(split /[A-Z]/,$transform)-1;
-        if ($transform && (int(split / /,$progA) + int(split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens) && ($axiomNum < int(@axNumFrac)) && (($all =~/Not_equal/) || (rand() < $axNumFrac[$axiomNum]))) {
+        $all = "X $progA Y $progB Z $transform";
+        $all =~s/\s+/ /g;
+        if ($transform && (int(split / /,$progA) + int(split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens) && (rand() < 2*$axNumFrac[$axiomNum])) {
+            $progs{$progMid} = 1;
             $samples+=1;
             print $all."\n";
         }
