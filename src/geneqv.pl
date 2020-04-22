@@ -747,7 +747,7 @@ while ($samples < $numSamples) {
     $progTmp =~s/(.)/$1 /g;
     $progTmp =~s/\s+/ /g;
     $progTmp =~s/(\( .) (.)/$1$2/g;
-    next if (int(split / /,$progTmp) > ($maxTokens/2 + int(@axNumFrac)));
+    next if (int(grep { !/[()]/ } split / /,$progTmp) > ($maxTokens/2 + int(@axNumFrac)));
     my $progB = GenerateProgBfromProgA($progA,"");
     if ($multipass) {
         if ($simplify) {
@@ -797,7 +797,7 @@ while ($samples < $numSamples) {
     $progB =~s/(\( .) (.)/$1$2/g;
     my $all = "X $progA Y $progB Z $transform";
     $all =~s/\s+/ /g;
-    if ((int(split / /,$progA) + int(split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens)) {
+    if ((int(grep { !/[()]/ } split / /,$progA) + int(grep { !/[()]/ } split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens)) {
         $samples+=1;
         print $all."\n";
     }
@@ -811,7 +811,7 @@ while ($samples < $numSamples) {
         $axiomNum = int(split /[A-Z]/,$transform)-1;
         $all = "X $progA Y $progB Z $transform";
         $all =~s/\s+/ /g;
-        if ($transform && (int(split / /,$progA) + int(split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens) && (rand() < 2*$axNumFrac[$axiomNum])) {
+        if ($transform && (int(grep { !/[()]/ } split / /,$progA) + int(grep { !/[()]/ } split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens) && (rand() < 2*$axNumFrac[$axiomNum])) {
             $progs{$progMid} = 1;
             $samples+=1;
             print $all."\n";
