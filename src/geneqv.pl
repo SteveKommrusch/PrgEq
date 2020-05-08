@@ -275,6 +275,7 @@ sub GenerateProgBfromProgA {
     my $newright="";
     my $in;
     my $dont_commute = 0;
+    my $rightFirst = ((rand() < 0.5) && $multipass) ? 1 : 0;
 
     if ($progA =~s/^\((..) //) {
         $in=1;
@@ -440,8 +441,13 @@ sub GenerateProgBfromProgA {
             } else {
                 $op =~s/^./\-/;
             }
+            if ($rightFirst) {
+                $newright= GenerateProgBfromProgA($left,$path."right ");
+            }
             $newleft= GenerateProgBfromProgA($leftleft,$path."left ");
-            $newright= GenerateProgBfromProgA($left,$path."right ");
+            if (! $rightFirst) {
+                $newright= GenerateProgBfromProgA($left,$path."right ");
+            }
             return "($op $newleft $newright)";
         } elsif ($op eq "is") {
             $op = "ns";
@@ -501,8 +507,8 @@ sub GenerateProgBfromProgA {
 
     if (rand() < 0.4 * $pr && (($op eq "+s" && ($left eq "0" || $right eq "0")) ||
                          ($op eq "-s" && $right eq "0") ||
-                         ($op eq "*s" && ($left eq "1" || $right eq "1")) ||
-                         ($op eq "/s" && $right eq "1")) && $axioms =~/Noop/) {
+                         ($op =~ /\*./ && ($left eq "1" || $right eq "1")) ||
+                         ($op =~ "/s" && $right eq "1")) && $axioms =~/Noop/) {
         $transform .= $path."Noop ";
         if ($left eq "0" || $left eq "1") {
             return GenerateProgBfromProgA($right,$path);
@@ -560,32 +566,52 @@ sub GenerateProgBfromProgA {
 
     if (rand() < 0.5 * $pr && ($op eq "*m") && ($leftop =~/\+./ || $leftop =~/-./) && $axioms =~/Distribleft/) {
         $transform .= $path."Distribleft ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        }
         $newleft = GenerateProgBfromProgA("($op $leftleft $right)",$path."left ");
-        $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        }
         $leftop =~s/.$/m/;
         return "($leftop $newleft $newright)";
     }
 
     if (rand() < 0.5 * $pr && ($op eq "*m") && ($rightop =~/\+./ || $rightop =~/-./) && $axioms =~/Distribright/) {
         $transform .= $path."Distribright ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $left $rightright)",$path."right ");
+        }
         $newleft = GenerateProgBfromProgA("($op $left $rightleft)",$path."left ");
-        $newright= GenerateProgBfromProgA("($op $left $rightright)",$path."right ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $left $rightright)",$path."right ");
+        }
         $rightop =~s/.$/m/;
         return "($rightop $newleft $newright)";
     }
 
     if (rand() < 0.5 * $pr && ($op =~/\*[vs]/ || $op eq "/s") && ($leftop =~/\+./ || $leftop =~/-./) && $axioms =~/Distribleft/) {
         $transform .= $path."Distribleft ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        }
         $newleft = GenerateProgBfromProgA("($op $leftleft $right)",$path."left ");
-        $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        }
         if ($op =~/.v/) {$leftop =~s/.$/v/}
         return "($leftop $newleft $newright)";
     }
 
     if (rand() < 0.5 * $pr && ($op =~/\*[vs]/) && ($rightop =~/\+./ || $rightop =~/-./) && $axioms =~/Distribright/) {
         $transform .= $path."Distribright ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $left $rightright)",$path."right ");
+        }
         $newleft = GenerateProgBfromProgA("($op $left $rightleft)",$path."left ");
-        $newright= GenerateProgBfromProgA("($op $left $rightright)",$path."right ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $left $rightright)",$path."right ");
+        }
         if ($op =~/.v/) {$rightop =~s/.$/v/}
         return "($rightop $newleft $newright)";
     }
@@ -607,8 +633,13 @@ sub GenerateProgBfromProgA {
         }
         if ($typematch) {
             $transform .= $path."Factorleft ";
+            if ($rightFirst) {
+                $newright= GenerateProgBfromProgA("($op $leftright $rightright)",$path."right ");
+            }
             $newleft = GenerateProgBfromProgA("$leftleft",$path."left ");
-            $newright= GenerateProgBfromProgA("($op $leftright $rightright)",$path."right ");
+            if (! $rightFirst) {
+                $newright= GenerateProgBfromProgA("($op $leftright $rightright)",$path."right ");
+            }
             return "($leftop $newleft $newright)";
         }
     }
@@ -630,23 +661,38 @@ sub GenerateProgBfromProgA {
         }
         if ($typematch) {
             $transform .= $path."Factorright ";
+            if ($rightFirst) {
+                $newright= GenerateProgBfromProgA("$rightright",$path."right ");
+            }
             $newleft = GenerateProgBfromProgA("($op $leftleft $rightleft)",$path."left ");
-            $newright= GenerateProgBfromProgA("$rightright",$path."right ");
+            if (! $rightFirst) {
+                $newright= GenerateProgBfromProgA("$rightright",$path."right ");
+            }
             return "($leftop $newleft $newright)";
         }
     }
 
     if (rand() < 0.5 * $pr && ($op =~/\+./ || $op =~ /\*[ms]/) && ($op eq $rightop) && $axioms =~/Assocleft/) {
         $transform .= $path."Assocleft ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("$rightright",$path."right ");
+        }
         $newleft = GenerateProgBfromProgA("($op $left $rightleft)",$path."left ");
-        $newright= GenerateProgBfromProgA("$rightright",$path."right ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("$rightright",$path."right ");
+        }
         return "($op $newleft $newright)";
     }
 
     if (rand() < 0.5 * $pr && ($op =~/\+./ || $op =~ /\*[ms]/) && ($op eq $leftop) && $axioms =~/Assocright/) {
         $transform .= $path."Assocright ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        }
         $newleft = GenerateProgBfromProgA("$leftleft",$path."left ");
-        $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("($op $leftright $right)",$path."right ");
+        }
         return "($op $newleft $newright)";
     }
   
@@ -655,8 +701,13 @@ sub GenerateProgBfromProgA {
                          ($op eq "is" && $leftop eq "/s") ||
                          ($op eq "nm" && $leftop eq "-m")) && $axioms =~/Flipleft/) {
         $transform .= $path."Flipleft ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("$leftleft",$path."right ");
+        }
         $newleft = GenerateProgBfromProgA("$leftright",$path."left ");
-        $newright= GenerateProgBfromProgA("$leftleft",$path."right ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("$leftleft",$path."right ");
+        }
         return "($leftop $newleft $newright)";
     }
 
@@ -668,36 +719,61 @@ sub GenerateProgBfromProgA {
         $newop = $op;
         $newop =~s/\-/\+/;
         $newop =~s/\//\*/;
-        $newleft = GenerateProgBfromProgA("$left",$path."left ");
+        if (! $rightFirst) {
+            $newleft = GenerateProgBfromProgA("$left",$path."left ");
+        }
         if ($op eq $rightop) {
             $newright= GenerateProgBfromProgA("($op $rightright $rightleft)",$path."right ");
         } else {
             $newright= GenerateProgBfromProgA("$rightleft",$path."right ");
         }
+        if ($rightFirst) {
+            $newleft = GenerateProgBfromProgA("$left",$path."left ");
+        }
         return "($newop $newleft $newright)";
     }
     if (rand() < 0.2 * $pr && $op eq "*m" && $axioms =~/Transpose/) {
         $transform .= $path."Transpose ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("$left",$path."left right left ");
+        }
         $newleft = GenerateProgBfromProgA("$right",$path."left left left ");
-        $newright= GenerateProgBfromProgA("$left",$path."left right left ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("$left",$path."left right left ");
+        }
         return "(tm (*m (tm $newleft) (tm $newright)))";
     }
     if (rand() < 0.2 * $pr && (($op eq "-m") || ($op eq "+m")) && $axioms =~/Transpose/) {
         $transform .= $path."Transpose ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("$right",$path."left right left ");
+        }
         $newleft = GenerateProgBfromProgA("$left",$path."left left left ");
-        $newright= GenerateProgBfromProgA("$right",$path."left right left ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("$right",$path."left right left ");
+        }
         return "(tm ($op (tm $newleft) (tm $newright)))";
     }
     if (rand() < 0.5 * $pr && ($op eq "tm") && ($leftop eq "*m") && $axioms =~/Transpose/) {
         $transform .= $path."Transpose ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("$leftleft",$path."right left ");
+        }
         $newleft = GenerateProgBfromProgA("$leftright",$path."left left ");
-        $newright= GenerateProgBfromProgA("$leftleft",$path."right left ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("$leftleft",$path."right left ");
+        }
         return "(*m (tm $newleft) (tm $newright))";
     }
     if (rand() < 0.5 * $pr && ($op eq "tm") && (($leftop eq "-m") || ($leftop eq "+m")) && $axioms =~/Transpose/) {
         $transform .= $path."Transpose ";
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("$leftright",$path."right left ");
+        }
         $newleft = GenerateProgBfromProgA("$leftleft",$path."left left ");
-        $newright= GenerateProgBfromProgA("$leftright",$path."right left ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("$leftright",$path."right left ");
+        }
         return "($leftop (tm $newleft) (tm $newright))";
     }
     if ($right eq "") {
@@ -719,12 +795,22 @@ sub GenerateProgBfromProgA {
         } else {
             $transform .= $path."Commute ";
         }
+        if ($rightFirst) {
+            $newright = GenerateProgBfromProgA($left,$path."right ");
+        }
         $newleft = GenerateProgBfromProgA($right,$path."left ");
-        $newright = GenerateProgBfromProgA($left,$path."right ");
+        if (! $rightFirst) {
+            $newright = GenerateProgBfromProgA($left,$path."right ");
+        }
         return "($op $newleft $newright)";
     } else {
+        if ($rightFirst) {
+            $newright = GenerateProgBfromProgA($right,$path."right ");
+        }
         $newleft = GenerateProgBfromProgA($left,$path."left ");
-        $newright = GenerateProgBfromProgA($right,$path."right ");
+        if (! $rightFirst) {
+            $newright = GenerateProgBfromProgA($right,$path."right ");
+        }
         return "($op $newleft $newright)";
     }
 }
