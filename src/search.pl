@@ -384,9 +384,13 @@ my $neg=0;
 my $exactpos=0;
 my $tpos=0;
 my $tneg=0;
-my @src;
+my @progAs;
+my @progBs;
 my @tgt;
 my @axpath;
+my @axioms;
+my @searching;
+my @nsrc;
 my $progA;
 my $progB;
 
@@ -396,66 +400,88 @@ while (<$fh_all>) {
   /X (.*) Y (.*) Z (.*)$/ || die "Error: incorrect syntax on input file: $_\n";
   $progA=$1;
   $progB=$2;
-  @src[$lnum]=": $progA\n";
-  @tgt[$lnum]=$progB;
+  $tgt[$lnum]=$3;
+  $progAs[$lnum][1][1]="$progA";  # Dims are sample,axiom,beam
+  $nsrc[$lnum]=1;              # Current number of active beam
+  $progBs[$lnum]=$progB;
+  $axioms[$lnum][1][1]="";
+  $axpath[$lnum]="";           # No proven path yet
+  $searching{$lnum.$progA}=1;  # Allows quick equiv check
 }
 close($fh_all) || die "close fh_all failed: $!";
 
-for ($axsteps=1; $axsteps < 13; $axsteps++) {
-  open(my $fh_raw,">","/tmp/PrgEq_search_raw.txt") || die "open fh_raw failed: $!";
+for ($axsteps=1; $axsteps < 12; $axsteps++) {
+  open(my $fh_raw,">","PrgEq_search_raw.txt") || die "open fh_raw failed: $!";
   for ($i=1; $i <= $lnum; $i++) {
-    $groupA = @src[$i];
-    $groupA =~ s/^.*: //;
-    while ($groupA =~ s/^([^\n])\n//) {
-      $progA = $1;
-      print $fh_raw "X $progA Y $tgt[$i] Z Emptyprediction\n";
+    for ($j=1; $j <= $nsrc[$lnum]; $j++) {
+      $progA = @src[$i][$axsteps][$j];
+      print $fh_raw "X $progA Y $progBs[$i] Z Emptyprediction\n";
     }
   }
   close($fh_raw) || die "close fh_raw failed: $!";
-  system "pre2graph.pl < tmpraw > tmpall\n";
-  system "python translate.py -model $data_path/final-model_step_100000.pt -src $data_path/src-test.txt -beam_size 3 -n_best 3 -gpu 0 -output $data_path/pred-test_beam2.txt -dynamic_dict 2>&1 > $data_path/translate2.out";
-  FIXME: Process beam outputs, call genBfromA
-  FIXME: Check outputs for success, add outputs that are legal and not duplicates to src[$lnum], add axiom to axpath[$lnum]
-}
-
-
-zzzzzzzzzzz
-
-while (<$truth>) {
-    $total++;
-    if ($target eq "Not_equal") {
-        $neg++;
-    } else {
-        $pos++;
+  system "pre2graph.pl < PrgEq_search_raw.txt > PrgEq_search_all$axsteps.txt\n";
+  system "perl -ne '/^(.*) X / && print \\$1' PrgEq_search_all$axsteps.txt > src-test$axsteps.txt"
+  system "cd \$OpenNMT_py; python translate.py -model \$data_path/$model -src \$data_path/src-test$axsteps.txt -beam_size 3 -n_best 3 -gpu 0 -output \$data_path/pred-test_beam$axsteps.txt -dynamic_dict 2>&1 > \$data_path/translate$axsteps.out";
+  
+  open(my $fh_pred,"<","pred-test_beam$axsteps.txt") || die "open fh_pred failed: $!";
+  for ($i=1; $i <= $lnum; $i++) {
+    my $new_nsrc=0;
+    my @preds;
+    my $found=0;
+    $progB = $progBs[$i];
+    for ($j=1; $j <= $nsrc[$i]; $j++) {
+      $progA=$progAs[$i][$axiom][$j];
+      for ($k=1; $k <= 3; $k++) {
+        my $ln = <$fh_pred> || die "Unexpected end of fh_pred";
+        chomp($ln);
+        $preds[$j][$k]=$ln;
+      }
     }
-    my $inc=1;
-    for (my $i=0; $i < $beam; $i++) {
-        my $p=<$pred>;
-        chop($p);
-        if ($target eq $p) {
-            if ($target eq "Not_equal") {
-                $tneg+=$inc;
-            } else {
-                $exactpos+=1;
-                $tpos+=$inc;
+    # Process predictions prioritizing 'best' predictions for each sample
+    for ($k=1; $k <= 3; $k++) {
+      for ($j=1; $j <= $nsrc[$i] && $new_nsrc <= $beam +1 && !$found; $j++) {
+        $progA=$progAs[$i][$axiom][$j];
+        my $ln = $preds[$j][$k];
+        if ($ln) {
+          $transform = $ln." ";
+          $predB = GenerateProgBfromProgA($progA,"");
+          if ($!transform eq "") {
+            $legal++;
+            if (!$searching[$i.$predB]) {
+              $new_nsrc++;
+              $axioms[$i][$axioms+1][$new_nsrc] = $axioms[$i][$axioms][$j]." $ln";
+              if ($new_nsrc <= $beam) {
+                $searching[$i.$predB]=1
+                $progAs[$i][$axioms+1][$new_nsrc] = $predB;
+              }
+              # Beyond beam width, check one extra axiom for correctness
+              # (This guarantees that at least 1 of the 2nd-best guesses of
+              # at least one sample gets checked).
+              if ($predB eq $progB) {
+                # Found path!
+                $axpath[$i] = $axioms[$i][$axioms+1][$new_nsrc];
+                $found=1;
+                $new_nsrc = 0;   # No need to keep searching
+              }
             }
-            $inc = 0;
-        } elsif ($target ne "Not_equal") {
-            $transform = "$p ";
-            $progA =~s/\( /(/g;
-            $progA =~s/ \)/)/g;
-            $progB =~s/\( /(/g;
-            $progB =~s/ \)/)/g;
-            my $predB = GenerateProgBfromProgA($progA,"");
-            if ($predB eq $progB && $transform eq "") {
-                print "Pos but not exact:\n progA=$progA\n progB=$progB\n target=$target\n pred=$p\n";
-                $tpos+=$inc;
-                $inc = 0;
-            }
+          } else {
+            $illegal++;
+          }
         }
+      }
     }
+    $nsrc[$i] = $new_nsrc > $beam ? $beam: $new_nsrc; 
+  }
+  <$fh_pred> && die "Too many lines in fh_pred";
+  close($fh_pred) || die "close fh_pred failed: $!";
 }
 
-print "Total = $total; Pos = $pos; True Pos = $tpos, exact = $exactpos\n";
-print "               Neg = $neg; True Neg = $tneg\n";
-
+for ($i=1; $i <= $lnum; $i++) {
+  if ($axpath[$i]) {
+    print "FOUND: $progAs[$i][1][1] to $progBs[$i] with $axpath[$i] in $axiom steps. Target path: $tgt[$i]\n";
+  } else {
+    # FIXME: Sometimes a program may fail to find path before 12 attempts (too many
+    # duplicates caused axiom path to deadend)
+    print "FAIL: $progAs[$i][1][1] to $progBs[$i] bestguess: $axioms[$i][12][1] Target path: $tgt[$i]\n";
+  }
+}
