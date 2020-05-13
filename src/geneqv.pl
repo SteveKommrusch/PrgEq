@@ -464,10 +464,18 @@ sub GenerateProgBfromProgA {
     
     if (rand() < 0.4 * $pr && ($leftop eq "-s" || $leftop eq "/s") && $leftleft eq $leftright && $axioms =~/Cancel/) {
         $transform .= $path."left Cancel ";
-        if ($leftop eq "-s") {
-            return GenerateProgBfromProgA("($op 0 $right)",$path);
+        if ($right ne "") {
+            if ($leftop eq "-s") {
+                return GenerateProgBfromProgA("($op 0 $right)",$path);
+            } else {
+                return GenerateProgBfromProgA("($op 1 $right)",$path);
+            }
         } else {
-            return GenerateProgBfromProgA("($op 1 $right)",$path);
+            if ($leftop eq "-s") {
+                return GenerateProgBfromProgA("($op 0)",$path);
+            } else {
+                return GenerateProgBfromProgA("($op 1)",$path);
+            }
         }
     }
 
@@ -482,10 +490,18 @@ sub GenerateProgBfromProgA {
 
     if (rand() < 0.4 * $pr && ($leftop eq "-m" || $leftop eq "-v") && $leftleft eq $leftright && $axioms =~/Cancel/) {
         $transform .= $path."left Cancel ";
-        if ($leftop eq "-m") {
-            return GenerateProgBfromProgA("($op O $right)",$path);
+        if ($right ne "") {
+            if ($leftop eq "-m") {
+                return GenerateProgBfromProgA("($op O $right)",$path);
+            } else {
+                return GenerateProgBfromProgA("($op o $right)",$path);
+            }
         } else {
-            return GenerateProgBfromProgA("($op o $right)",$path);
+            if ($leftop eq "-m") {
+                return GenerateProgBfromProgA("($op O)",$path);
+            } else {
+                return GenerateProgBfromProgA("($op o)",$path);
+            }
         }
     }
 
@@ -827,32 +843,31 @@ while ($samples < $numSamples) {
     # Triple binary operations to skew probabilities at root
     my $progA = GenerateProgA("+s -s *s /s +s -s *s /s +s -s *s /s is ns +m -m *m +m -m *m +m -m *m im nm tm +v -v *v +v -v *v +v -v *v nv",$rootProbChildSubtree);
     my $progTmp = $progA;
-    my $progMid;
-    my $transformMid;
     next if exists $progs{$progA};
     $progTmp =~s/(.)/$1 /g;
     $progTmp =~s/\s+/ /g;
     $progTmp =~s/(\( .) (.)/$1$2/g;
     next if (int(grep { !/[()]/ } split / /,$progTmp) > ($maxTokens/2 + int(@axNumFrac)));
     my $progB = GenerateProgBfromProgA($progA,"");
-    if ($multipass) {
+    next if $progB eq $progA;
+    # Even with multipass, allow some single-axiom options 
+    if ($multipass && rand() < 0.95) {
         if ($simplify) {
             $axioms = "(Cancel|Noop|Double|Multzero)";
             $progB = GenerateProgBfromProgA($progB,"");
             $axioms = $axiomsOrig;
         }
+        $progTmp = $progB;
         $progB = GenerateProgBfromProgA($progB,"");
         next if $progB eq $progA;
-        $progMid = $progB;
-        $transformMid = $transform;
         $progB = GenerateProgBfromProgA($progB,"");
-        next if $progB eq $progA;
+        next if $progB eq $progA || $progB eq $progTmp;
         if ((int(split /[A-Z]/,$transform)-1 < 4 || rand() < 0.7) && $simplify) {
             $axioms = "(Cancel|Noop|Double|Multzero)";
             $progB = GenerateProgBfromProgA($progB,"");
             $axioms = $axiomsOrig;
         }
-        next if $progB eq $progA;
+        next if $progB eq $progA || $progB eq $progTmp;
     }
     if ($genNotEq) {
       if ((rand() < 0.01 && !($progA =~/b/) && $progB =~s/a/b/) || 
@@ -886,22 +901,6 @@ while ($samples < $numSamples) {
     if ((int(grep { !/[()]/ } split / /,$progA) + int(grep { !/[()]/ } split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens)) {
         $samples+=1;
         print $all."\n";
-    }
-    if ($multipass && !($transform=~/Not_equal/) && !(exists $progs{$progMid})) {
-        $transformMid =~ s/\s+$//;
-        $transform =~s/^$transformMid\s*//;
-        $progA = $progMid;
-        $progA =~s/(.)/$1 /g;
-        $progA =~s/\s+/ /g;
-        $progA =~s/(\( .) (.)/$1$2/g;
-        $axiomNum = int(split /[A-Z]/,$transform)-1;
-        $all = "X $progA Y $progB Z $transform";
-        $all =~s/\s+/ /g;
-        if ($transform && (int(grep { !/[()]/ } split / /,$progA) + int(grep { !/[()]/ } split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens) && (rand() < 2*$axNumFrac[$axiomNum])) {
-            $progs{$progMid} = 1;
-            $samples+=1;
-            print $all."\n";
-        }
     }
 }
 
