@@ -12,7 +12,7 @@ sub GenProgUsingAxioms {
     my $transform = $_[2];
 
     $transform || return $progA;
-    $progA =~s/^\((..) // || return $progA;
+    $progA =~s/^\( (..) // || return $progA;
     my $op = $1;
     my $leftop="";
     my $rightop="";
@@ -27,9 +27,9 @@ sub GenProgUsingAxioms {
     my $newright="";
     my $in;
 
-    if ($progA =~s/^\((..) //) {
+    if ($progA =~s/^\( (..) //) {
         $in=1;
-        $left = "(".$1." ";
+        $left = "( ".$1." ";
         $leftop = $1;
         my $leftdone=0;
         while ($in >0) {
@@ -67,16 +67,23 @@ sub GenProgUsingAxioms {
                     }
                 }
             }
-            if ($progA =~s/^\)//) {
+            if ($progA =~s/^\)\s*//) {
                 $in-=1;
                 $left .= ")";
                 if ($in > 0) {
+                    $left .= " ";
                     if ($leftdone) {
-                        $leftright .= ")";
+                        if ($in == 1) {
+                            $leftright .= ")";
+                        } else {
+                            $leftright .= ") ";
+                        }
                     } else {
-                        $leftleft .= ")";
                         if ($in == 1) {
                             $leftdone=1;
+                            $leftleft .= ")";
+                        } else {
+                            $leftleft .= ") ";
                         }
                     }
                 }
@@ -87,9 +94,9 @@ sub GenProgUsingAxioms {
         $left = $1;
     }
 
-    if ($progA =~s/^\s*\((..) //) {
+    if ($progA =~s/^\s*\( (..) //) {
         $in=1;
-        $right = "(".$1." ";
+        $right = "( ".$1." ";
         $rightop = $1;
         my $leftdone=0;
         while ($in >0) {
@@ -127,16 +134,23 @@ sub GenProgUsingAxioms {
                     }
                 }
             }
-            if ($progA =~s/^\)//) {
+            if ($progA =~s/^\)\s*//) {
                 $in-=1;
                 $right .= ")";
                 if ($in > 0) {
+                    $right .= " ";
                     if ($leftdone) {
-                        $rightright .= ")";
-                    } else {
-                        $rightleft .= ")";
                         if ($in == 1) {
+                            $rightright .= ")";
+                        } else {
+                            $rightright .= ") ";
+                        }
+                    } else {
+                        if ($in == 1) {
+                            $rightleft .= ")";
                             $leftdone=1;
+                        } else {
+                            $rightleft .= ") ";
                         }
                     }
                 }
@@ -152,48 +166,48 @@ sub GenProgUsingAxioms {
     if (($leftop eq "-s" || $leftop eq "/s") && $leftleft eq $leftright && $transform =~s/^${path}left Cancel //) {
         if ($right ne "") {
             if ($leftop eq "-s") {
-                return GenProgUsingAxioms("($op 0 $right)",$path,$transform);
+                return GenProgUsingAxioms("( $op 0 $right )",$path,$transform);
             } else {
-                return GenProgUsingAxioms("($op 1 $right)",$path,$transform);
+                return GenProgUsingAxioms("( $op 1 $right )",$path,$transform);
             }
         } else {
             if ($leftop eq "-s") {
-                return GenProgUsingAxioms("($op 0)",$path,$transform);
+                return GenProgUsingAxioms("( $op 0 )",$path,$transform);
             } else {
-                return GenProgUsingAxioms("($op 1)",$path,$transform);
+                return GenProgUsingAxioms("( $op 1 )",$path,$transform);
             }
         }
     }
 
     if (($rightop eq "-s" || $rightop eq "/s") && $rightleft eq $rightright && $transform =~s/^${path}right Cancel //) {
         if ($rightop eq "-s") {
-            return GenProgUsingAxioms("($op $left 0)",$path,$transform);
+            return GenProgUsingAxioms("( $op $left 0 )",$path,$transform);
         } else {
-            return GenProgUsingAxioms("($op $left 1)",$path,$transform);
+            return GenProgUsingAxioms("( $op $left 1 )",$path,$transform);
         }
     }
 
     if (($leftop eq "-m" || $leftop eq "-v") && $leftleft eq $leftright && $transform =~s/^${path}left Cancel //) {
         if ($right ne "") {
             if ($leftop eq "-m") {
-                return GenProgUsingAxioms("($op O $right)",$path,$transform);
+                return GenProgUsingAxioms("( $op O $right )",$path,$transform);
             } else {
-                return GenProgUsingAxioms("($op o $right)",$path,$transform);
+                return GenProgUsingAxioms("( $op o $right )",$path,$transform);
             }
         } else {
             if ($leftop eq "-m") {
-                return GenProgUsingAxioms("($op O)",$path,$transform);
+                return GenProgUsingAxioms("( $op O )",$path,$transform);
             } else {
-                return GenProgUsingAxioms("($op o)",$path,$transform);
+                return GenProgUsingAxioms("( $op o )",$path,$transform);
             }
         }
     }
 
     if (($rightop eq "-m" || $rightop eq "-v") && $rightleft eq $rightright && $transform =~s/^${path}right Cancel //) {
         if ($rightop eq "-m") {
-            return GenProgUsingAxioms("($op $left O)",$path,$transform);
+            return GenProgUsingAxioms("( $op $left O )",$path,$transform);
         } else {
-            return GenProgUsingAxioms("($op $left o)",$path,$transform);
+            return GenProgUsingAxioms("( $op $left o )",$path,$transform);
         }
     }
 
@@ -255,31 +269,31 @@ sub GenProgUsingAxioms {
     }
 
     if (($op eq "*m") && ($leftop =~/\+./ || $leftop =~/-./) && $transform =~s/^${path}Distribleft //) {
-        $newleft = GenProgUsingAxioms("($op $leftleft $right)",$path."left ",$transform);
-        $newright= GenProgUsingAxioms("($op $leftright $right)",$path."right ",$transform);
+        $newleft = GenProgUsingAxioms("( $op $leftleft $right )",$path."left ",$transform);
+        $newright= GenProgUsingAxioms("( $op $leftright $right )",$path."right ",$transform);
         $leftop =~s/.$/m/;
-        return "($leftop $newleft $newright)";
+        return "( $leftop $newleft $newright )";
     }
 
     if (($op eq "*m") && ($rightop =~/\+./ || $rightop =~/-./) && $transform =~s/^${path}Distribright //) {
-        $newleft = GenProgUsingAxioms("($op $left $rightleft)",$path."left ",$transform);
-        $newright= GenProgUsingAxioms("($op $left $rightright)",$path."right ",$transform);
+        $newleft = GenProgUsingAxioms("( $op $left $rightleft )",$path."left ",$transform);
+        $newright= GenProgUsingAxioms("( $op $left $rightright )",$path."right ",$transform);
         $rightop =~s/.$/m/;
-        return "($rightop $newleft $newright)";
+        return "( $rightop $newleft $newright )";
     }
 
     if (($op =~/\*[vs]/ || $op eq "/s") && ($leftop =~/\+./ || $leftop =~/-./) && $transform =~s/^${path}Distribleft //) {
-        $newleft = GenProgUsingAxioms("($op $leftleft $right)",$path."left ",$transform);
-        $newright= GenProgUsingAxioms("($op $leftright $right)",$path."right ",$transform);
+        $newleft = GenProgUsingAxioms("( $op $leftleft $right )",$path."left ",$transform);
+        $newright= GenProgUsingAxioms("( $op $leftright $right )",$path."right ",$transform);
         if ($op =~/.v/) {$leftop =~s/.$/v/}
-        return "($leftop $newleft $newright)";
+        return "( $leftop $newleft $newright )";
     }
 
     if (($op =~/\*[vs]/) && ($rightop =~/\+./ || $rightop =~/-./) && $transform =~s/^${path}Distribright //) {
-        $newleft = GenProgUsingAxioms("($op $left $rightleft)",$path."left ",$transform);
-        $newright= GenProgUsingAxioms("($op $left $rightright)",$path."right ",$transform);
+        $newleft = GenProgUsingAxioms("( $op $left $rightleft )",$path."left ",$transform);
+        $newright= GenProgUsingAxioms("( $op $left $rightright )",$path."right ",$transform);
         if ($op =~/.v/) {$rightop =~s/.$/v/}
-        return "($rightop $newleft $newright)";
+        return "( $rightop $newleft $newright )";
     }
 
     if (($op =~/[\+\-]./) && ($leftop eq $rightop) && ($leftleft eq $rightleft) && ($leftop =~/\*./) && $transform =~s/^${path}Factorleft //) {
@@ -299,8 +313,8 @@ sub GenProgUsingAxioms {
         }
         if ($typematch) {
             $newleft = GenProgUsingAxioms("$leftleft",$path."left ",$transform);
-            $newright= GenProgUsingAxioms("($op $leftright $rightright)",$path."right ",$transform);
-            return "($leftop $newleft $newright)";
+            $newright= GenProgUsingAxioms("( $op $leftright $rightright )",$path."right ",$transform);
+            return "( $leftop $newleft $newright )";
         } else {
             return "<PROGBFAILTOMATCH>";
         }
@@ -322,24 +336,24 @@ sub GenProgUsingAxioms {
             $op =~s/.$/v/;
         }
         if ($typematch) {
-            $newleft = GenProgUsingAxioms("($op $leftleft $rightleft)",$path."left ",$transform);
+            $newleft = GenProgUsingAxioms("( $op $leftleft $rightleft )",$path."left ",$transform);
             $newright= GenProgUsingAxioms("$rightright",$path."right ",$transform);
-            return "($leftop $newleft $newright)";
+            return "( $leftop $newleft $newright )";
         } else {
             return "<PROGBFAILTOMATCH>";
         }
     }
 
     if (($op =~/\+./ || $op =~ /\*[ms]/) && ($op eq $rightop) && $transform =~s/^${path}Assocleft //) {
-        $newleft = GenProgUsingAxioms("($op $left $rightleft)",$path."left ",$transform);
+        $newleft = GenProgUsingAxioms("( $op $left $rightleft )",$path."left ",$transform);
         $newright= GenProgUsingAxioms("$rightright",$path."right ",$transform);
-        return "($op $newleft $newright)";
+        return "( $op $newleft $newright )";
     }
 
     if (($op =~/\+./ || $op =~ /\*[ms]/) && ($op eq $leftop) && $transform =~s/^${path}Assocright //) {
         $newleft = GenProgUsingAxioms("$leftleft",$path."left ",$transform);
-        $newright= GenProgUsingAxioms("($op $leftright $right)",$path."right ",$transform);
-        return "($op $newleft $newright)";
+        $newright= GenProgUsingAxioms("( $op $leftright $right )",$path."right ",$transform);
+        return "( $op $newleft $newright )";
     }
   
     if ((($op eq "nv" && $leftop eq "-v") ||
@@ -348,7 +362,7 @@ sub GenProgUsingAxioms {
          ($op eq "nm" && $leftop eq "-m")) && $transform =~s/^${path}Flipleft //) {
         $newleft = GenProgUsingAxioms("$leftright",$path."left ",$transform);
         $newright= GenProgUsingAxioms("$leftleft",$path."right ",$transform);
-        return "($leftop $newleft $newright)";
+        return "( $leftop $newleft $newright )";
     }
 
     if ((($op eq "-s" && $rightop =~/[\-n]s/) ||
@@ -360,31 +374,31 @@ sub GenProgUsingAxioms {
         $newop =~s/\//\*/;
         $newleft = GenProgUsingAxioms("$left",$path."left ",$transform);
         if ($op eq $rightop) {
-            $newright= GenProgUsingAxioms("($op $rightright $rightleft)",$path."right ",$transform);
+            $newright= GenProgUsingAxioms("( $op $rightright $rightleft )",$path."right ",$transform);
         } else {
             $newright= GenProgUsingAxioms("$rightleft",$path."right ",$transform);
         }
-        return "($newop $newleft $newright)";
+        return "( $newop $newleft $newright )";
     }
     if ($op eq "*m" && $transform =~s/^${path}Transpose //) {
         $newleft = GenProgUsingAxioms("$right",$path."left left left ",$transform);
         $newright= GenProgUsingAxioms("$left",$path."left right left ",$transform);
-        return "(tm (*m (tm $newleft) (tm $newright)))";
+        return "( tm ( *m ( tm $newleft ) ( tm $newright ) ) )";
     }
     if ((($op eq "-m") || ($op eq "+m")) && $transform =~s/^${path}Transpose //) {
         $newleft = GenProgUsingAxioms("$left",$path."left left left ",$transform);
         $newright= GenProgUsingAxioms("$right",$path."left right left ",$transform);
-        return "(tm ($op (tm $newleft) (tm $newright)))";
+        return "( tm ( $op ( tm $newleft ) ( tm $newright ) ) )";
     }
     if (($op eq "tm") && ($leftop eq "*m") && $transform =~s/^${path}Transpose //) {
         $newleft = GenProgUsingAxioms("$leftright",$path."left left ",$transform);
         $newright= GenProgUsingAxioms("$leftleft",$path."right left ",$transform);
-        return "(*m (tm $newleft) (tm $newright))";
+        return "( *m ( tm $newleft ) ( tm $newright ) )";
     }
     if (($op eq "tm") && (($leftop eq "-m") || ($leftop eq "+m")) && $transform =~s/^${path}Transpose //) {
         $newleft = GenProgUsingAxioms("$leftleft",$path."left left ",$transform);
         $newright= GenProgUsingAxioms("$leftright",$path."right left ",$transform);
-        return "($leftop (tm $newleft) (tm $newright))";
+        return "( $leftop ( tm $newleft ) ( tm $newright ) )";
     }
     if ($right eq "") {
         if (($leftop eq $op) && $transform =~s/^${path}Double //) {
@@ -392,17 +406,17 @@ sub GenProgUsingAxioms {
         } else {
             $newleft = GenProgUsingAxioms($left,$path."left ",$transform);
         }
-        return "($op $newleft)";
+        return "( $op $newleft )";
     }
 
     if ($left ne $right && $transform =~s/^${path}Commute //) {
         $newleft = GenProgUsingAxioms($right,$path."left ",$transform);
         $newright = GenProgUsingAxioms($left,$path."right ",$transform);
-        return "($op $newleft $newright)";
+        return "( $op $newleft $newright )";
     } else {
         $newleft = GenProgUsingAxioms($left,$path."left ",$transform);
         $newright = GenProgUsingAxioms($right,$path."right ",$transform);
-        return "($op $newleft $newright)";
+        return "( $op $newleft $newright )";
     }
 }
 

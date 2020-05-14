@@ -5,17 +5,18 @@ use warnings;
 
 require "../src/genProgUsingAxioms.pl";
 
-if ( ! -f $ARGV[1] || ! -f $ARGV[2] ) {
-  print "Usage: search.pl beam src model\n";
+if ( ! -f $ARGV[2] || ! -f $ARGV[3] ) {
+  print "Usage: search.pl beam maxtok src model\n";
   print "    Open source file and search 12 steps to see if model can prove\n";
-  print "    programs equal using beam width\n";
+  print "    programs equal using beam width and up to maxtok for both programs.\n";
   print "  Example: search.pl 5 all_multi_test.txt final-model_step_100000.pt\n";
   exit(1);
 }
 
 my $beam=$ARGV[0];
-open(my $fh_all,"<",$ARGV[1]) || die "open fh_all failed: $!";
-my $model=$ARGV[2];
+my $maxTokens;
+open(my $fh_all,"<",$ARGV[2]) || die "open fh_all failed: $!";
+my $model=$ARGV[3];
 
 my $pos=0;
 my $neg=0;
@@ -27,7 +28,7 @@ my @progBs;
 my @tgt;
 my @axpath;
 my @axioms;
-my @searching;
+my %searching;
 my @nsrc;
 my $progA;
 my $progB;
@@ -39,7 +40,7 @@ while (<$fh_all>) {
   $progA=$1;
   $progB=$2;
   $tgt[$lnum]=$3;
-  $progAs[$lnum][1][1]="$progA";  # Dims are sample,axiom,beam
+  $progAs[$lnum][1][1]=$progA; # Dims are sample,axiom,beam
   $nsrc[$lnum]=1;              # Current number of active beam
   $progBs[$lnum]=$progB;
   $axioms[$lnum][1][1]="";
@@ -67,6 +68,7 @@ for ($axsteps=1; $axsteps < 12; $axsteps++) {
     my @preds;
     my $found=0;
     $progB = $progBs[$i];
+    my $numtokB = int(grep { !/[()]/ } split / /,$progB);
     for ($j=1; $j <= $nsrc[$i]; $j++) {
       $progA=$progAs[$i][$axiom][$j];
       for ($k=1; $k <= 3; $k++) {
@@ -81,14 +83,11 @@ for ($axsteps=1; $axsteps < 12; $axsteps++) {
         $progA=$progAs[$i][$axiom][$j];
         my $ln = $preds[$j][$k];
         if ($ln) {
-          $progA =~s/\( /(/g;
-          $progA =~s/ \)/)/g;
           $predB = GenProgUsingAxioms($progA,"",$ln." ");
           if ($predB ne $progA && ! $ln =~ /[A-Z].*[A-Z]/) {
-            $predB =~s/\(/( /g;
-            $predB =~s/\)/ )/g;
             $legal++;
-            if (!$searching[$i.$predB]) {
+            # Only add new programs which fit in maxToken (network size)
+            if (!$searching[$i.$predB] && ($numtokB +  int(grep { !/[()]/ } split / /,$predB) < $maxTokens)) {
               $new_nsrc++;
               $axioms[$i][$axioms+1][$new_nsrc] = $axioms[$i][$axioms][$j]." $ln";
               if ($new_nsrc <= $beam) {

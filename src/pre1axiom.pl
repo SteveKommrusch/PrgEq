@@ -19,24 +19,28 @@ while (<>) {
     my $progB = $2;
     my $allTransform = $3." ";
     my $origZ = $3;
+    my $tokA = $progA;
+    $tokA =~s/(.)/$1 /g;
+    $tokA =~s/\s+/ /g;
+    $tokA =~s/(\( .) (.)/$1$2/g;
+    die "tokA didn't match: $tokA vs $progA\n" if ($tokA ne "$progA ");
+    my $tokB = $progB;
+    $tokB =~s/(.)/$1 /g;
+    $tokB =~s/\s+/ /g;
+    $tokB =~s/(\( .) (.)/$1$2/g;
+    die "tokB didn't match: $tokB vs $progB\n" if ($tokB ne "$progB ");
     next if exists $progs{$progA};
     $progs{$progA} = 1;
     my $progIntermediate=$progA;
     my $samples="";
     while ($allTransform =~s/^([a-z ]*[A-Z][a-z]*) //) {
         my $Z=$1;
-FIXME: Add size check and build up samples
-FIXME: Have beam search consider node count
         print "X $progIntermediate Y $progB Z $Z\n";
-        $progIntermediate =~s/\( /(/g;
-        $progIntermediate =~s/ \)/)/g;
         my $progAxiom=GenProgUsingAxioms($progIntermediate,"",$Z." ");
         if ($progIntermediate eq $progAxiom) {
             die "Axiom not applied: X $progA Y $progB Z $origZ died at $Z on $progIntermediate\n";
         }
         $progIntermediate = $progAxiom;
-        $progIntermediate =~s/\(/( /g;
-        $progIntermediate =~s/\)/ )/g;
     }
     if ($progIntermediate ne $progB) {
         die "Incorrect path computation: X $progA Y $progB Z $origZ produces $progIntermediate\n";
