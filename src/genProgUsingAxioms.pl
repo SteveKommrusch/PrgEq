@@ -60,6 +60,9 @@ sub GenProgUsingAxioms {
                         $leftleft = $1;
                     }
                 } else {
+                    if ($in > 5) {
+                        return "TOODEEP";
+                    }
                     if ($leftdone) {
                         $leftright .= $1;
                     } else {
@@ -127,6 +130,9 @@ sub GenProgUsingAxioms {
                         $rightleft = $1;
                     }
                 } else {
+                    if ($in > 5) {
+                        return "TOODEEP";
+                    }
                     if ($leftdone) {
                         $rightright .= $1;
                     } else {

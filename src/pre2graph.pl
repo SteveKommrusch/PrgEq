@@ -11,7 +11,6 @@ if ($ARGV[0]) {
 
 my @xform;
 my $nodes;
-my %progs;
 
 sub edges {
     my $l     = $_[0];
@@ -135,13 +134,11 @@ while (<>) {
     my $progA = $1;
     my $progB = $2;
     my $transform = $3;
-    next if exists $progs{$progA};
-    $progs{$progA} = 1;
     place($progA,0,128);
     place($progB,1,128);
     my $merged = join(" ",@xform);
     die "Nodes > 100" if $nodes > 100;
-    next if $merged =~/FAIL/;
+    die "Programs too deep: X $progA Y $progB $transform with $merged" if $merged =~/FAIL/;
     $_ = $merged;
 
     @xform = ("Null") x 256;

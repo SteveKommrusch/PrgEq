@@ -855,7 +855,13 @@ my $axiomsOrig = $axioms;
 while ($samples < $numSamples) {
     $transform = "";
     # Triple binary operations to skew probabilities at root
-    my $progA = GenerateProgA("+s -s *s /s +s -s *s /s +s -s *s /s is ns +m -m *m +m -m *m +m -m *m im nm tm +v -v *v +v -v *v +v -v *v nv",$rootProbChildSubtree);
+    my $progA;
+    if (rand() < 0.5) {
+        $progA = GenerateProgA("+s -s *s /s +s -s *s /s +s -s *s /s is ns +m -m *m +m -m *m +m -m *m im nm tm +v -v *v +v -v *v +v -v *v nv",$rootProbChildSubtree);
+    } else {
+        # Sometimes create smaller tree to potentially improve training
+        $progA = GenerateProgA("+s -s *s /s +s -s *s /s +s -s *s /s is ns +m -m *m +m -m *m +m -m *m im nm tm +v -v *v +v -v *v +v -v *v nv",$rootProbChildSubtree+$childProbChildSubtreeDelta);
+    }
     my $progTmp;
     next if exists $progs{$progA};
     my $numtokA = int(grep { !/[()]/ } split / /,$progA);
@@ -863,7 +869,7 @@ while ($samples < $numSamples) {
     my $progB = GenerateProgBfromProgA($progA,"");
     next if $progB eq $progA;
     # Even with multipass, allow some single-axiom options 
-    if ($multipass && rand() < 0.95) {
+    if ($multipass && rand() < 0.975) {
         next if ($numtokA + int(grep { !/[()]/ } split / /,$progB) >= $maxTokens);
         if ($simplify) {
             $axioms = "(Cancel|Noop|Double|Multzero)";
@@ -908,7 +914,11 @@ while ($samples < $numSamples) {
     $progs{$progA} = 1;
     my $all = "X $progA Y $progB Z $transform";
     $all =~s/\s+/ /g;
-    if (($numtokA + int(grep { !/[()]/ } split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens)) {
+    # Check for generated depth by analyzing parenthesis
+    $progTmp=$progB;
+    $progTmp=~s/[^()]//g; 
+    while ($progTmp =~s/\)\(//g) {};
+    if (($numtokA + int(grep { !/[()]/ } split / /,$progB) < $maxTokens) && (int(split / /,$transform) <= $maxOutputTokens) && length($progTmp)/2 < 7) {
         $samples+=1;
         print $all."\n";
     }

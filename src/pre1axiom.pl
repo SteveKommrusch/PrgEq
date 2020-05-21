@@ -5,44 +5,47 @@ use warnings;
 
 require "../src/genProgUsingAxioms.pl";
 
-if ($ARGV[0]) {
-  print "Usage: pre1axiom.pl\n";
-  print "  Transform src sequence to multiple samples each 1 axiom long.\n";
+if (! $ARGV[1] || $ARGV[0] < 10 || ! -f $ARGV[1]) {
+  print "Usage: pre1axiom.pl maxTokens file\n";
+  print "  Transform samples in file to multiple samples each 1 axiom long.\n";
+  print "  While insuring training data fits in network input size maxTokens.\n";
   exit(1);
 }
 
+my $maxTokens = $ARGV[0];
+open(my $src,"<",$ARGV[1]) || die "open src failed: $!";
 my %progs;
 
-while (<>) {
+while (<$src>) {
     /X (.*) Y (.*) Z (.*)$/ || die "Bad syntax on input $_";
     my $progA = $1;
     my $progB = $2;
     my $allTransform = $3." ";
     my $origZ = $3;
-    my $tokA = $progA;
-    $tokA =~s/(.)/$1 /g;
-    $tokA =~s/\s+/ /g;
-    $tokA =~s/(\( .) (.)/$1$2/g;
-    die "tokA didn't match: $tokA vs $progA\n" if ($tokA ne "$progA ");
-    my $tokB = $progB;
-    $tokB =~s/(.)/$1 /g;
-    $tokB =~s/\s+/ /g;
-    $tokB =~s/(\( .) (.)/$1$2/g;
-    die "tokB didn't match: $tokB vs $progB\n" if ($tokB ne "$progB ");
     next if exists $progs{$progA};
     $progs{$progA} = 1;
+    my $numtokB = int(grep { !/[()]/ } split / /,$progB);
     my $progIntermediate=$progA;
     my $samples="";
-    while ($allTransform =~s/^([a-z ]*[A-Z][a-z]*) //) {
+    my %inter;
+    $inter{$progA}=1;
+    while ($progB && $allTransform =~s/^([a-z ]*[A-Z][a-z]*) //) {
         my $Z=$1;
-        print "X $progIntermediate Y $progB Z $Z\n";
+        $samples .= "X $progIntermediate Y $progB Z $Z\n";
         my $progAxiom=GenProgUsingAxioms($progIntermediate,"",$Z." ");
         if ($progIntermediate eq $progAxiom) {
             die "Axiom not applied: X $progA Y $progB Z $origZ died at $Z on $progIntermediate\n";
         }
+        if (exists $inter{$progAxiom} || $progAxiom =~/TOODEEP/ || int(grep { !/[()]/ } split / /,$progAxiom) + $numtokB >= $maxTokens) {
+            $progB="";  # Delete target, path too large or created loop
+        }
+        $inter{$progAxiom}=1;
         $progIntermediate = $progAxiom;
     }
-    if ($progIntermediate ne $progB) {
-        die "Incorrect path computation: X $progA Y $progB Z $origZ produces $progIntermediate\n";
+    if ($progB) {
+        print $samples;
+        if ($progIntermediate ne $progB) {
+            die "Incorrect path computation: X $progA Y $progB Z $origZ produces $progIntermediate\n";
+        }
     }
 }
