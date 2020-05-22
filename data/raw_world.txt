@@ -1,0 +1,15 @@
+X ( -s ( *s ( +s a b ) ( +s c d ) ) ( +s ( *s c a) ( *s d b ) ) ) Y ( +s ( *s a d ) ( *s b c ) ) Z Emptyprediction
+X ( *m A ( +m B C ) ) Y ( +m ( *m A B ) ( *m A C ) ) Z Emptyprediction
+X ( *m A ( +m B C ) ) Y ( *m A ( +m C B) ) Z Emptyprediction
+X ( +m ( *m A B ) ( *m A C ) ) Y ( *m A ( +m C B) ) Z Emptyprediction
+X ( *m I ( *m A B ) ) Y ( *m A B ) Z Emptyprediction
+X ( *m I ( *m A B ) ) Y ( *m ( *m A B ) I ) Z Emptyprediction
+X ( *m ( *m A B ) I ) Y ( *m A B ) Z Emptyprediction
+X ( *m O ( +m A B ) ) Y O Z Emptyprediction
+X ( *m O ( +m A B ) ) Y ( *m ( +m A B ) O ) Z Emptyprediction
+X ( *m c ( +m ( *m 1 A ) B ) ) Y ( +m ( *m c A ) ( *m c B ) ) Z Emptyprediction
+X ( *m c ( +m ( *m 1 A ) B ) ) Y ( +m ( *m c B ) ( *m c A ) ) Z Emptyprediction
+X ( +m ( *m c A ) ( *m c B ) ) Y ( +m ( *m c B ) ( *m c A ) ) Z Emptyprediction
+X ( +m ( *m ( *s c d ) A ) ( *m 0 A ) ) Y ( *m c ( *m d A ) ) Z Emptyprediction
+X ( +m ( *m ( *s c d ) A ) ( *m 0 A ) ) Y ( *m ( +s ( *s c d ) 0 ) A ) Z Emptyprediction
+X ( *m ( +s ( *s c d ) 0 ) A ) Y ( *m c ( *m d A ) ) Z Emptyprediction

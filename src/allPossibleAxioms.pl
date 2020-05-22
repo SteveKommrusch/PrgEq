@@ -247,11 +247,15 @@ sub AllPossibleAxioms {
         $transform .= "${path}Factorright ";
     }
 
-    if (($op =~/\+./ || $op =~ /\*[ms]/) && ($op eq $rightop)) {
+    if (($op =~/\*./ && $rightop =~ /\*./) ||
+        ($op =~/\+./ && $rightop =~/[\-+]./) ||
+        ($op =~ /\*s/ && $rightop eq "/s")) {
         $transform .= "${path}Assocleft ";
     }
 
-    if (($op =~/\+./ || $op =~ /\*[ms]/) && ($op eq $leftop)) {
+    if (($op =~/\*./ && $leftop =~ /\*./) ||
+        ($op =~/[\-+]./ && $leftop =~/\+./) ||
+        ($op eq "/s" && $leftop =~/\*s/)) {
         $transform .= "${path}Assocright ";
     }
   
@@ -287,7 +291,13 @@ sub AllPossibleAxioms {
         return $transform.AllPossibleAxioms($left,$path."left ");
     }
 
-    if ($left ne $right && !($op =~/-./ || $op eq "*m" || $op eq "/s")) {
+    my $dont_commute=0;
+    if ($op =~/-./ || $op eq "/s" ||
+            ($op eq "*m" && !($leftop =~ /^.s/ || $left =~ /^[a-j01OI]/ || $rightop =~ /^.s/ || $right =~ /^[a-j01OI]/)) ||
+            ($op eq "*v" && !($leftop =~ /^.s/ || $left =~ /^[a-j01]/ || $rightop =~ /^.s/ || $right =~ /^[a-j01]/))) {
+        $dont_commute = 1;
+    }
+    if ($left ne $right && !$dont_commute) {
             $transform .= "${path}Commute ";
     }
     return $transform.AllPossibleAxioms($left,$path."left ").AllPossibleAxioms($right,$path."right ");

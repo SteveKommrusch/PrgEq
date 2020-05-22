@@ -702,7 +702,29 @@ sub GenerateProgBfromProgA {
         }
     }
 
-    if (rand() < 0.5 * $pr && ($op =~/\+./ || $op =~ /\*[ms]/) && ($op eq $rightop) && $axioms =~/Assocleft/) {
+    if (rand() < 0.5 * $pr && $op =~/\*./ && $rightop =~ /\*./ && $axioms =~/Assocleft/) {
+        $transform .= $path."Assocleft ";
+        if (($leftop =~ /.s/ || $left =~/^[a-j01]/) && ($rightleft =~/^. .s/ || $rightleft =~/^[a-j01]/)) {
+          $leftop = "*s";
+        } elsif ($leftop =~ /.v/ || $left =~/^[o-z]/ || $rightleft =~/^. .v/ || $rightleft =~/^[o-z]/) {
+          $leftop = "*v";
+        } else {
+          $leftop = "*m";
+        }
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("$rightright",$path."right ");
+        }
+        $newleft = GenerateProgBfromProgA("( $leftop $left $rightleft )",$path."left ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("$rightright",$path."right ");
+        }
+        return "( $op $newleft $newright )";
+    }
+
+    if (rand() < 0.5 * $pr && 
+             (($op =~/\+./ && $rightop =~/[\-+]./) || 
+              ($op =~ /\*s/ && $rightop eq "/s")) &&
+             $axioms =~/Assocleft/) {
         $transform .= $path."Assocleft ";
         if ($rightFirst) {
             $newright= GenerateProgBfromProgA("$rightright",$path."right ");
@@ -711,10 +733,32 @@ sub GenerateProgBfromProgA {
         if (! $rightFirst) {
             $newright= GenerateProgBfromProgA("$rightright",$path."right ");
         }
-        return "( $op $newleft $newright )";
+        return "( $rightop $newleft $newright )";
     }
 
-    if (rand() < 0.5 * $pr && ($op =~/\+./ || $op =~ /\*[ms]/) && ($op eq $leftop) && $axioms =~/Assocright/) {
+    if (rand() < 0.5 * $pr && $op =~/\*./ && $leftop =~ /\*./ && $axioms =~/Assocright/) {
+        $transform .= $path."Assocright ";
+        if (($rightop =~ /.s/ || $right =~/^[a-j01]/) && ($leftright =~/^. .s/ || $leftright =~/^[a-j01]/)) {
+          $rightop = "*s";
+        } elsif ($rightop =~ /.v/ || $right =~/^[o-z]/ || $leftright =~/^. .v/ || $leftright =~/^[o-z]/) {
+          $rightop = "*v";
+        } else {
+          $rightop = "*m";
+        }
+        if ($rightFirst) {
+            $newright= GenerateProgBfromProgA("( $rightop $leftright $right )",$path."right ");
+        }
+        $newleft = GenerateProgBfromProgA("$leftleft",$path."left ");
+        if (! $rightFirst) {
+            $newright= GenerateProgBfromProgA("( $rightop $leftright $right )",$path."right ");
+        }
+        return "( $op $newleft $newright )";
+    }
+  
+    if (rand() < 0.5 * $pr && 
+             (($op =~/[\-+]./ && $leftop =~/\+./) || 
+              ($op eq "/s" && $leftop =~/\*s/)) &&
+             $axioms =~/Assocright/) {
         $transform .= $path."Assocright ";
         if ($rightFirst) {
             $newright= GenerateProgBfromProgA("( $op $leftright $right )",$path."right ");
@@ -723,7 +767,7 @@ sub GenerateProgBfromProgA {
         if (! $rightFirst) {
             $newright= GenerateProgBfromProgA("( $op $leftright $right )",$path."right ");
         }
-        return "( $op $newleft $newright )";
+        return "( $leftop $newleft $newright )";
     }
   
     if (rand() < 0.5 * $pr && (($op eq "nv" && $leftop eq "-v") ||
@@ -816,11 +860,13 @@ sub GenerateProgBfromProgA {
         return "( $op $newleft )";
     }
 
-    if (($op =~/-./ || $op eq "/s" || $op eq "*m") && (!$genNotEq || rand() < 0.95) || $op eq "*v") {
+    if ($op =~/-./ || $op eq "/s" || 
+            ($op eq "*m" && !($leftop =~ /^.s/ || $left =~ /^[a-j01OI]/ || $rightop =~ /^.s/ || $right =~ /^[a-j01OI]/)) ||
+            ($op eq "*v" && !($leftop =~ /^.s/ || $left =~ /^[a-j01]/ || $rightop =~ /^.s/ || $right =~ /^[a-j01]/))) {
         $dont_commute = 1;
     }
-    if (rand() < 0.1 * $pr && !$dont_commute && $left ne $right && $axioms =~/Commute/) {
-        if ($op =~/-./ || $op eq "*m" || $op eq "/s") {
+    if (rand() < 0.1 * $pr && (!$dont_commute || ($genNotEq && rand() < 0.05)) && $left ne $right && $axioms =~/Commute/) {
+        if ($dont_commute) {
             $transform = "Not_equal ";
         } else {
             $transform .= $path."Commute ";

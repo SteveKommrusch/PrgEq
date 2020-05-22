@@ -52,10 +52,6 @@ while (<$truth>) {
             }
             $inc = 0;
         } elsif ($target ne "Not_equal") {
-            $progA =~s/\( /(/g;
-            $progA =~s/ \)/)/g;
-            $progB =~s/\( /(/g;
-            $progB =~s/ \)/)/g;
             my $predB = GenProgUsingAxioms($progA,"",$p." ");
             if ($predB eq $progB) {
                 print "Pos but not exact:\n progA=$progA\n progB=$progB\n target=$target\n pred=$p\n";
