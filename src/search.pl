@@ -81,7 +81,7 @@ for (my $axsteps=1; $axsteps < 12; $axsteps++) {
     }
     # Process predictions prioritizing 'best' predictions for each sample
     for (my $k=1; $k <= 3; $k++) {
-      for (my $j=1; $j <= $nsrc[$i] && $new_nsrc <= $beam +1 && !$found; $j++) {
+      for (my $j=1; $j <= $nsrc[$i] && $new_nsrc < ($beam > 1 ? 2*$beam : $beam) && !$found; $j++) {
         $progA=$progAs[$i][$axsteps][$j];
         my $ln = $preds[$j][$k];
         if ($ln) {
@@ -99,9 +99,9 @@ for (my $axsteps=1; $axsteps < 12; $axsteps++) {
                 $searching{$i.$predB}=1;
                 $progAs[$i][$axsteps+1][$new_nsrc] = $predB;
               }
-              # Beyond beam width, check one extra axiom for correctness
-              # (This guarantees that at least 1 of the 2nd-best guesses of
-              # at least one sample gets checked).
+              # Check up to twice as many predictions as beam width
+              # This guarantees that at all of the 2nd-best guesses of
+              # the samples get checked.
               if ($predB eq $progB) {
                 # Found path!
                 $axpath[$i] = $axioms[$i][$axsteps+1][$new_nsrc];

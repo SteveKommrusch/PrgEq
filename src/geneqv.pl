@@ -911,7 +911,7 @@ while ($samples < $numSamples) {
     my $progTmp;
     next if exists $progs{$progA};
     my $numtokA = int(grep { !/[()]/ } split / /,$progA);
-    next if ($numtokA > ($maxTokens/2 + int(@axNumFrac)));
+    next if ($numtokA > $maxTokens/2+1);
     my $progB = GenerateProgBfromProgA($progA,"");
     next if $progB eq $progA;
     # Even with multipass, allow some single-axiom options 
