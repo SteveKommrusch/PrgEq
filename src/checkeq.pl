@@ -49,6 +49,7 @@ while (<$truth>) {
             } else {
                 $exactpos+=1;
                 $tpos+=$inc;
+                print "Exact:\n progA=$progA\n progB=$progB\n target=$target\n";
             }
             $inc = 0;
         } elsif ($target ne "Not_equal") {
