@@ -4,7 +4,7 @@ pe-graph2axiom provides a model which allows training on equivalent program
 pairs to create axiomatic proofs of equivalence. Included are scripts which
 generate test and training data.
 
-# Add image from paper for camera-ready <center style="padding: 40px"><img width="70%" src="http://Full.png" /></center>
+<!-- Add image from paper for camera-ready <center style="padding: 40px"><img width="70%" src="http://Full.png" /></center> -->
 
 Table of Contents
 =================
@@ -47,11 +47,13 @@ unzip pe-graph2axiom-big
 ## Quickstart
 
 ### Step 1: Environment setup
+```bash
 # cd to top of repository 
 # Review env.sh script and adjust for your installation.
 cat env.sh
 ln -s ../src data
 ln -s ../src runs
+```
 
 ### Step 2: Prepare new datasets if desired
 ```bash
@@ -111,16 +113,16 @@ data/raw_arbitrary5 is the human-readable file for the AxiomStep5 dataset referr
 data/raw_ordered10 is the human-readable file for the WholeProof10 dataset referred to in the paper.
 data/raw_ordered5 is the human-readable file for the WholeProof5 dataset referred to in the paper.
 
-data/*/all_test_fullaxioms.txt are files for all datasets showing the 10000 samples and whole proof used in their generation
+data/\*/all_test_fullaxioms.txt are files for all datasets showing the 10000 samples and whole proof used in their generation
 
-data/*/???-train.txt are the files used for training data by our models.
-data/*/???-val.txt are the files used for validation data by our models.
-data/*/???-test.txt are the files used for testing data by our models.
+data/\*/???-train.txt are the files used for training data by our models.
+data/\*/???-val.txt are the files used for validation data by our models.
+data/\*/???-test.txt are the files used for testing data by our models.
 
 runs/arbitrary10_g10b/final-model_step_300000.pt in the golden model used to find proofs in our paper.
 
-runs/arbitrary10_g10b/mbest_300_arbitrary10/search* are the final proof results used for our golden model in the paper.
-runs/*/mbest_*/search* are the final proof results used for experiments in our paper
+runs/arbitrary10_g10b/mbest_300_arbitrary10/search\* are the final proof results used for our golden model in the paper.
+runs/\*/mbest_\*/search\* are the final proof results used for experiments in our paper
 
 
 ## Acknowledgements
