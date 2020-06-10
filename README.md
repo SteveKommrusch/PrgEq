@@ -155,11 +155,11 @@ The repository contains data, models, and results used for publication, but thes
  * runs/\*/preprocess.sh: Calls OpenNMT preprocess step to prepare data for training.
  * runs/\*/train.sh: Calls OpenNMT training step
  * runs/\*/run.sh: Combines preprocess and training to ease batch mode training.
- * runs/WorldProof\*/translacte*sh: Calls OpenNMT translate step to produce proposed whole proofs on dataset.
+ * runs/WorldProof\*/translate*sh: Calls OpenNMT translate step to produce proposed whole proofs on dataset.
  * runs/AxiomStep10/final-model\_step\_300000.pt is the golden model used to find proofs in our paper.
  * runs/\*/final-model\_step\_\*.pt are the best model resulting from training twice, based on validation score.
 
- * runs/AxiomStep10/mbest_300_AxiomStep10/search10.txt: The final beam with 10 proof results used for our golden model in the paper showing 9,310 found proofs.
+ * runs/AxiomStep10/mbest_300_AxiomStep10/search10.txt: The final beam with 10 proof results used for our golden model in the paper showing 9,310 proofs found out of 10,000 tests.
  * runs/\*/mbest\*AxiomStep10: Results for testing the given model using the AxiomStep10 test dataset.
  * runs/\*/mbest\*AxiomStep5: Results for testing the given model using the AxiomStep5 test dataset.
  * runs/\*/mbest\*WholeProof10: Results for testing the given model using the WholeProof10 test dataset.
