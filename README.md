@@ -4,13 +4,26 @@ pe-graph2axiom provides a model which allows training on equivalent program
 pairs to create axiomatic proofs of equivalence. Included are scripts which
 generate test and training data.
 
-<!-- Add image from paper for camera-ready <center style="padding: 40px"><img width="70%" src="http://Full.png" /></center> -->
+There are 2 versions of this dataset; a 44MB pe-graph2axiom.zip file and a 699MB pe-graph2axiom-big file.
+
+### pe-graph2axiom.zip
+  * Provides all control scripts to generate datasets and train models as well as key results files found in our paper.
+  * src/ includes all scripts used to generate training data and search for proofs using our trained model.
+  * data/ includes our dataset generation configuration files and the data/\*/all\_test\_fullaxiom.txt files showing the (P1,P2,S) tuples for the test sets.
+  * runs/ includes results for all 4 models presented in our paper. For each model we provide training output files, testset input files, OpenNMT interface scripts, and P1,P2 proof results from the models for beam search 1 and 10 (2 and 5 are provided in pe-graph2axiom-big).
+
+### pe-graph2axiom-big.zip
+  * Includes all files from pe-graph2axiom.zip
+  * Provides all files needed to reproduce results found in our paper including our specific dataset files and trained models.
+  * src/ includes all scripts used to generate training data and search for proofs using our trained model.
+  * data/ includes our dataset generation configuration files and the data/\*/all\_test\* files showing the (P1,P2,S) tuples for the test sets, and test files used during inference by our models.
+  * runs/ includes input files, trained models, and results for all 4 models presented in our paper. In addition to files from pe-graph2axiom.zip, the full training dataset files for OpenNMT input are provided, as well as the save model with the best validation score. Our golden model is runs/AxiomStep10/final-model\_step\_300000.pt.
 
 Table of Contents
 =================
   * [Requirements](#requirements)
   * [Quickstart](#quickstart)
-  * [Pregenerated Results](#pregeneratedresults)
+  * [File Descriptions](#filedescriptions)
   * [Acknowledgements](#acknowledgements)
   * [Citation](#citation)
 
@@ -40,8 +53,8 @@ pip install -r requirements.opt.txt
 ```bash
 # cd to the parent directory to OpenNMT-py
 # At camera-ready: git clone <anonymized>
-# For now, get pe-graph2axiom-big.zip
-unzip pe-graph2axiom-big
+# For now, get pe-graph2axiom.zip
+unzip pe-graph2axiom.zip
 ```
 
 ## Quickstart
@@ -51,8 +64,6 @@ unzip pe-graph2axiom-big
 # cd to top of repository 
 # Review env.sh script and adjust for your installation.
 cat env.sh
-ln -s ../src data
-ln -s ../src runs
 ```
 
 ### Step 2: Prepare new datasets if desired
@@ -61,21 +72,21 @@ ln -s ../src runs
 source ./env.sh
 cd data
 # geneqv.pl randomly generates program pairs and proofs in human-readable format
-../src/geneqv.pl genenv_arbitrary10.txt > raw_arbitrary10.txt
+../src/geneqv.pl genenv_AxiomStep10.txt > raw_arbitrary10.txt
 # pre1axiom.pl creates N 1-axiom training samples for N-axiom long proofs in the raw file
-../src/pre1axiom.pl 99 raw_arbitrary10 > pre1_arbitrary10.txt
+../src/pre1axiom.pl 99 raw_AxiomStep10 > pre1_arbitrary10.txt
 # pre2graph.pl creates GGNN input formate used by OpenNMT-py
-../src/pre2graph.pl < pre1_arbitrary10.txt > all_arbitrary10.txt
-cd arbitrary10
+../src/pre2graph.pl < pre1_AxiomStep10.txt > all_arbitrary10.txt
+cd AxiomStep10
 # srcvaltest.sh creates training, validation, and test files from full dataset
-../../src/srcvaltest.sh ../all_arbitrary10.txt
+../../src/srcvaltest.sh ../all_AxiomStep10.txt
 ```
 
 ### Step 3: Create models
 ```bash
 # cd to top of repository 
 source ./env.sh
-cd arbitrary10_g10b
+cd AxiomStep10_g10b
 # Clean models if desired
 rm *.pt *out 
 # run.sh will use OpenNMT to preprocess datasets and train model. Can take several hours with GPU system
@@ -86,16 +97,16 @@ setsid nice -n 19 run.sh > run.nohup.out 2>&1 < /dev/null &
 ```bash
 # cd to top of repository
 source ./env.sh
-cd arbitrary10_g10b
+cd AxiomStep10_g10b
 data_path=`/bin/pwd`
 # Doing these 4 beam widths takes under an hour on GPU system
-for i in 1 2 5 10; do ../../src/search.pl $i 99 ../../data/arbitrary10/all_test.txt final-model_step_300000.pt > mbest_300_arbitrary10/search$i.txt; done
+for i in 1 2 5 10; do ../../src/search.pl $i 99 ../../data/AxiomStep10/all_test.txt final-model_step_300000.pt > mbest_300_arbitrary10/search$i.txt; done
 ```
 
 ### Step 5: Analyze results
 ```bash
 # cd to top of repository
-cd runs/arbitrary10_g10b/mbest_300_arbitrary10
+cd runs/AxiomStep10_g10b/mbest_300_arbitrary10
 # Note that all search*.txt results have FAIL or FOUND lines for all 10000 samples
 grep -c "^F" search*txt
 # Report number of correctly FOUND proofs for the various beam searches
@@ -104,24 +115,34 @@ grep -c "^FOUND" search*txt
 grep "^FOUND" search*txt
 ```
 
-## PregeneratedResults
+## FileDescriptions
 
-The repository contains results used for publication, but these can be overwritten with the steps above
+The repository contains data, models, and results used for publication, but these can be overwritten with the steps above as desired.
 
-data/raw_arbitrary10 is the human-readable file for the AxiomStep10 dataset referred to in the paper.
-data/raw_arbitrary5 is the human-readable file for the AxiomStep5 dataset referred to in the paper.
-data/raw_ordered10 is the human-readable file for the WholeProof10 dataset referred to in the paper.
-data/raw_ordered5 is the human-readable file for the WholeProof5 dataset referred to in the paper.
+./env.sh: Environment variable setup 
 
-data/\*/all_test_fullaxioms.txt are files for all datasets showing the 10000 samples and whole proof used in their generation
+src/
 
-data/\*/???-train.txt are the files used for training data by our models.
-data/\*/???-val.txt are the files used for validation data by our models.
-data/\*/???-test.txt are the files used for testing data by our models.
+data/geneqv_\*txt: Files used by src/geneqv.pl to configure dataset generation.
+data/KhanPlusManual: Includes test files for KhanAcademy problems and some manually generated problems used in our paper.
+data/AxiomStep10: Includes test files for AxiomStep10 dataset described in our paper
+data/AxiomStep5: Includes test files for AxiomStep5 dataset described in our paper
+data/WholeProof10: Includes test files for WholeProof10 dataset described in our paper
+data/WholeProof5: Includes test files for WholeProof5 dataset described in our paper
 
-runs/arbitrary10_g10b/final-model_step_300000.pt in the golden model used to find proofs in our paper.
+data/\*/all\_test.txt: Files providing P1,P2,S tuples for dataset tests.
+data/\*/all\_test\_fullaxioms.txt: Files showing the 10000 samples and whole proof used in their generation.
+data/\*/all\_test\_passible.txt: Files showing the 10000 samples and all possible axioms for P1.
 
-runs/arbitrary10_g10b/mbest_300_arbitrary10/search\* are the final proof results used for our golden model in the paper.
+runs/\*: 4 directories for our 4 primary models discussed in our paper.
+runs/\*/???-train.txt are source input and target output files used for training our models.
+runs/\*/???-val.txt are source input and target output files used for validating our models.
+runs/\*/???-test.txt are source input and target output files used for testing our models.
+
+runs/AxiomStep10/final-model\_step\_300000.pt is the golden model used to find proofs in our paper.
+runs/\*/final-model\_step\_\*.pt are the best model resulting from training twice, based on validation score.
+
+runs/AxiomStep10_g10b/mbest_300_arbitrary10/search\* are the final proof results used for our golden model in the paper.
 runs/\*/mbest_\*/search\* are the final proof results used for experiments in our paper
 
 
