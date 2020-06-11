@@ -8,11 +8,12 @@ There are 2 versions of this file set; a 44MB pe-graph2axiom.zip file and a 699M
 
 ### pe-graph2axiom.zip
   * Provides all control scripts to generate datasets and train models as well as key results files found in our paper.
-  * src/ includes all scripts used to generate training data and search for proofs using our trained model. Note: These scripts use slightly different axiom names than inhe paper; in particular, Noop, Double, and Multzero are used in the code which correspond to NeutralOp, DoubleOp, and AbsorbOp in the paper.
+  * src/ includes all scripts used to generate training data and search for proofs using our trained model. Note: These scripts use slightly different axiom names than in the paper; in particular, Noop, Double, and Multzero are used in the code which correspond to NeutralOp, DoubleOp, and AbsorbOp in the paper.
   * data/ includes our dataset generation configuration files and the data/\*/all\_test\_fullaxiom.txt files showing the (P1,P2,S) tuples for the test sets.
   * runs/ includes results for all 4 models presented in our paper. For each model we provide training output files, testset input files, OpenNMT interface scripts, and P1,P2 proof results from the models for beam search 1 and 10 (2 and 5 are provided in pe-graph2axiom-big). Our golden results of 9,310 successful equivalence proofs on a 10,000 sample testset are in runs/AxiomStep10/mbest\_300\_AxiomStep10/search10.txt.
 
 ### pe-graph2axiom-big.zip
+  * This file is available via anonymous URL at: http://gofile.io/d/4MxVv1
   * Includes all files from pe-graph2axiom.zip
   * Provides all files needed to reproduce results found in our paper including our specific dataset files and trained models.
   * src/ includes all scripts used to generate training data and search for proofs using our trained model.
@@ -49,7 +50,7 @@ Note: If you have MemoryError in the install try to use `pip` with `--no-cache-d
 pip install -r requirements.opt.txt
 ```
 
-### Step 2: Install pe-graph2axiom: FIXME: Remove references to Kommrusch
+### Step 2: Install pe-graph2axiom
 ```bash
 # cd to the parent directory to OpenNMT-py
 # At camera-ready: git clone <anonymized>
