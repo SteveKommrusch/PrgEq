@@ -3,8 +3,7 @@
 use strict;
 use warnings;
 
-# Define commonly-used subroutite that uses global $transform
-# as axiom list to create a new output program
+# Define commonly-used subroutine that returns all possible axioms given an input program
 
 sub AllPossibleAxioms {
     my $progA = $_[0];
