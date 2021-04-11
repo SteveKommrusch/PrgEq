@@ -123,7 +123,7 @@ sub ExpandNonTerm {
     } 
     if ($expr_type eq "Matrix_id") {
         if(scalar @matrix_avail == 0) {
-           @tmplist=("Om","Im");
+           @tmplist=("0m","Im");
         } else {
            @tmplist=@matrix_avail;
         }
@@ -134,7 +134,7 @@ sub ExpandNonTerm {
     }
     @tmplist = @{$nonTerm{$expr_type}};
     @tmplist = split / /,($tmplist[ rand @tmplist ]);
-    while ((scalar @tmplist > 1) && (rand($max_tokens) < 2.0)) {
+    while ((scalar @tmplist > 1) && (rand($max_tokens) < 1.5)) {
         @tmplist = @{$nonTerm{$expr_type}};
         @tmplist = split / /,($tmplist[ rand @tmplist ]);
     }
@@ -1035,12 +1035,15 @@ while ($samples < $numSamples) {
             $progA = $stmA.$progA;
         }
     }
-    next if (scalar split /[ ()]+/,$progA) > $maxTokens;
-    next if (scalar split /;/,$progA) > 26;
+    next if (scalar split / /,$progA) > $maxTokens;
+    next if rand() < 0.5 && (scalar split / /,$progA) < int($maxTokens/3);
+    next if rand() < 0.5 && (scalar split / /,$progA) < int($maxTokens/2);
+    next if (scalar split /;/,$progA) > 16;
     next if $progA =~ /\([^)]*\([^)]*\([^)]*\([^)]*\([^)]*\([^)]*\([^)]*\(/;
     next if $progA =~ /\)[^(]*\)[^(]*\)[^(]*\)[^(]*\)[^(]*\)[^(]*\)[^(]*\)/;
     my $progTmp;
     next if exists $progs{$progA};
+    $progs{$progA} = 1;
 
     my $progB = "";
 
@@ -1088,8 +1091,8 @@ while ($samples < $numSamples) {
         $progB = InterAssignAxioms($progB, @{$nonTerm{'Scalar_id'}}[-3], @{$nonTerm{'Vector_id'}}[-3], @{$nonTerm{'Matrix_id'}}[-3]);
     }
     next if $progB eq $progA;
-    next if (scalar split /[ ()]+/,$progB) > $maxTokens;
-    next if (scalar split /;/,$progB) > 26;
+    next if (scalar split / /,$progB) > $maxTokens;
+    next if (scalar split /;/,$progB) > 16;
     next if $progB =~ /\([^)]*\([^)]*\([^)]*\([^)]*\([^)]*\([^)]*\([^)]*\(/;
     next if $progB =~ /\)[^(]*\)[^(]*\)[^(]*\)[^(]*\)[^(]*\)[^(]*\)[^(]*\)/;
     print "X $progA","Y $progB","Z $transform\n";

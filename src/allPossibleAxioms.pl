@@ -7,10 +7,10 @@ use warnings;
 
 sub AllPossibleAxioms {
     my $progA = $_[0];
-    my $path = $_[1];
+    my $stmnum = $_[1];
+    my $path = $_[2];
 
-    $progA =~s/^\( (..) // || return "";
-    my $op = $1;
+    my $op = "";
     my $leftop="";
     my $rightop="";
     my $left="";
@@ -25,13 +25,143 @@ sub AllPossibleAxioms {
     my $in;
     my $transform="";
 
+    # Process statements first
+    if ($progA =~/ =+ /) {
+        $stmnum=1;
+        my $lhsPrev = "";
+        my $eqPrev = "";
+        my $rhsPrev = "";
+
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            my $lhs = $1;
+            my $eq = $2;
+            my $rhs = $3;
+            if ($eqPrev && ! ($rhsPrev =~ /$lhs/) && ! ($stmA =~ /$lhsPrev/)) {
+                $transform .= "stm$stmnum Swapprev ";
+            } else {
+                $lhsPrev = $lhs;
+                $eqPrev = $eq;
+                $rhsPrev = $rhs;
+            }
+            $stmnum++;
+        }
+
+        my %vars;
+        $stmnum=1;
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            my $lhs = $1;
+            my $eq = $2;
+            my $rhs = $3;
+            foreach my $var (keys %vars) {
+                if ($rhs =~ /$var/) {
+                    $transform .= "stm$stmnum Inline $var ";
+                }
+            }
+            if (! ($rhs =~/\(.*\(.*\(/) && $eq ne "===" && ! ($rhs =~/$lhs/)) {
+                $vars{$lhs}=$rhs;
+            } else {
+                (exists $vars{$lhs}) && (delete $vars{$lhs});
+            }
+            $stmnum++;
+        }
+
+        %vars=();
+        my $progB = $progA;
+        $stmnum=1;
+        while ($progB =~ s/^([^;]+); //) {
+            my $stmA = $1;
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || die "Illegal statement in dead code check: $stmA\n";
+            my $lhs = $1;
+            my $eq = $2;
+            my $rhs = $3;
+            if ($progB =~/$lhs/ || $eq eq "===") {
+            } else {
+                $transform .= "stm$stmnum Deletestm ";
+            }
+            $stmnum++;
+        }
+
+        my %expr=();
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~ s/^\s*\S+ =+ //;
+            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) \( ([^()]+) \) \)/ ( )/) {
+                $expr{"$1 ( $2 ) ( $3 )"}+=6;
+                $expr{$2}+=3;
+                $expr{$3}+=3;
+            }
+            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) ([^()]+) \)/ ( )/) {
+                $expr{"$1 ( $2 ) $3"}+=5;
+                $expr{$2}+=3;
+            }
+            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) \)/ ( )/) {
+                $expr{"$1 ( $2 )"}+=4;
+                $expr{$2}+=3;
+            }
+            while ($stmA =~s/ \( ([^()]+) \)/ ( )/) {
+                $expr{$1}+=3;
+            }
+        }
+        $stmnum=1;
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S.*)$/ || next;
+            $stmA = $1;
+            foreach my $key (keys %expr) {
+                if (0.01 < (1.0-6.0/$expr{$key})) {
+                    if (! ($stmA =~/= \( \Q$key\E \) *$/) && ($stmA =~ /\( \Q$key\E \)/)) {
+                        $key=~tr/[A-Z] /[a-z]_/;
+                        $transform .= "stm$stmnum Newtmp path $key ";
+                    }
+                }
+            }
+            $stmnum++;
+        }
+
+        %vars=();
+        $stmnum=1;
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            my $lhs = $1;
+            my $eq = $2;
+            my $rhs = $3;
+            foreach my $var (keys %vars) {
+                if ($rhs =~ s/\Q$vars{$var}\E/$var/g) {
+                    $transform .= "stm$stmnum Usevar $var ";
+                }
+            }
+            foreach my $var (keys %vars) {
+                if ($vars{$var} =~/$lhs/) {
+                    delete $vars{$var};
+                }
+            }
+            if (! ($rhs =~/\(.*\(.*\(.*\(.*\(/) && ($rhs =~/\(/) && $eq ne "===" && ! ($rhs =~/$lhs/)) {
+                $vars{$lhs}=$rhs;
+            } else {
+                delete $vars{$lhs};
+            }
+            $stmnum++;
+        }
+   
+        $stmnum=1;
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            my $rhs = $3;
+            $transform .= AllPossibleAxioms($rhs,$stmnum,"N");
+            $stmnum++;
+        }
+        return $transform;
+    }
+
+    $progA =~s/^\( (..) // || return "";
+    $op = $1;
     if ($progA =~s/^\( (..) //) {
         $in=1;
         $left = "( ".$1." ";
         $leftop = $1;
         my $leftdone=0;
         while ($in >0) {
-            if ($progA =~s/^(\s*)([^()])(\s*)//) {
+            if ($progA =~s/^(\s*)([^()\s]+)(\s*)//) {
                 $left .= $1.$2.$3;
                 if ($leftdone) {
                     if ($in == 1) {
@@ -91,7 +221,7 @@ sub AllPossibleAxioms {
             }
         }
     } else {
-        $progA =~s/^(.)\s*//;
+        $progA =~s/^(\S+)\s*//;
         $left = $1;
     }
 
@@ -101,7 +231,7 @@ sub AllPossibleAxioms {
         $rightop = $1;
         my $leftdone=0;
         while ($in >0) {
-            if ($progA =~s/^(\s*)([^()])(\s*)//) {
+            if ($progA =~s/^(\s*)([^()\s]+)(\s*)//) {
                 $right .= $1.$2.$3;
                 if ($leftdone) {
                     if ($in == 1) {
@@ -161,145 +291,145 @@ sub AllPossibleAxioms {
             }
         }
     } else {
-        $progA =~s/^\s*(\S)\s*// ;
+        $progA =~s/^\s*(\S+)\s*// ;
         if ($1 ne ")") {
             $right = $1;
         }
     }
 
     if (($leftop eq "-s" || $leftop eq "/s") && $leftleft eq $leftright) {
-        $transform .= "${path}left Cancel ";
+        $transform .= "stm$stmnum Cancel ${path}l ";
     }
 
     if (($rightop eq "-s" || $rightop eq "/s") && $rightleft eq $rightright) {
-        $transform .= "${path}right Cancel ";
+        $transform .= "stm$stmnum Cancel ${path}r ";
     }
 
     if (($leftop eq "-m" || $leftop eq "-v") && $leftleft eq $leftright) {
-        $transform .= "${path}left Cancel ";
+        $transform .= "stm$stmnum Cancel ${path}l ";
     }
 
     if (($rightop eq "-m" || $rightop eq "-v") && $rightleft eq $rightright) {
-        $transform .= "${path}right Cancel ";
+        $transform .= "stm$stmnum Cancel ${path}r ";
     }
 
     if ($op eq "*m" && (($leftleft eq $right && $leftop eq "im") ||
                         ($rightleft eq $left && $rightop eq "im"))) {
-        $transform .= "${path}Cancel ";
+        $transform .= "stm$stmnum Cancel ${path} ";
     }
 
-    if ((($op eq "+s" && ($left eq "0" || $right eq "0")) ||
-         ($op eq "-s" && $right eq "0") ||
-         ($op =~ /\*./ && ($left eq "1" || $right eq "1")) ||
-         ($op eq "/s" && $right eq "1"))) {
-        $transform .= "${path}Noop ";
+    if ((($op eq "+s" && ($left eq "0s" || $right eq "0s")) ||
+         ($op eq "-s" && $right eq "0s") ||
+         ($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
+         ($op eq "/s" && $right eq "1s"))) {
+        $transform .= "stm$stmnum Noop ${path} ";
     }
 
-    if ((($op eq "+m" && ($left eq "O" || $right eq "O")) ||
-         ($op eq "-m" && $right eq "O"))) {
-        $transform .= "${path}Noop ";
+    if ((($op eq "+m" && ($left eq "0m" || $right eq "0m")) ||
+         ($op eq "-m" && $right eq "0m"))) {
+        $transform .= "stm$stmnum Noop ${path} ";
     }
 
-    if ($op eq "*m" && (($left eq "I" && ($rightop =~ /.m/ || $right =~ /^[A-Z]/)) || ($right eq "I" && ($leftop =~ /.m/ || $left =~ /^[A-Z]/)))) {
-        $transform .= "${path}Noop ";
+    if ($op eq "*m" && (($left eq "Im" && ($rightop =~ /.m/ || $right =~ /^([0I]m|m\d+)/)) || ($right eq "Im" && ($leftop =~ /.m/ || $left =~ /^([0I]m|m\d+)/)))) {
+        $transform .= "stm$stmnum Noop ${path} ";
     }
 
-    if ((($op eq "+v" && ($left eq "o" || $right eq "o")) ||
-         ($op eq "-v" && $right eq "o"))) {
-        $transform .= "${path}Noop ";
+    if ((($op eq "+v" && ($left eq "0v" || $right eq "0v")) ||
+         ($op eq "-v" && $right eq "0v"))) {
+        $transform .= "stm$stmnum Noop ${path} ";
     }
 
-    if ((($op eq "*s" && ($left eq "0" || $right eq "0")) ||
-                         ($op eq "/s" && $left eq "0"))) {
-        $transform .= "${path}Multzero ";
+    if ((($op eq "*s" && ($left eq "0s" || $right eq "0s")) ||
+                         ($op eq "/s" && $left eq "0s"))) {
+        $transform .= "stm$stmnum Multzero ${path} ";
     }
 
-    if (($op eq "*m" && ($left eq "O" || $right eq "O" || $left eq "0" || $right eq "0"))) {
-        $transform .= "${path}Multzero ";
+    if (($op eq "*m" && ($left eq "0m" || $right eq "0m" || $left eq "0s" || $right eq "0s"))) {
+        $transform .= "stm$stmnum Multzero ${path} ";
     }
 
-    if (($op eq "*v" && ($left =~/^[oO0]/ || $right =~/^[oO0]/))) {
-        $transform .= "${path}Multzero ";
+    if (($op eq "*v" && ($left =~/^0[msv]/ || $right =~/^0[msv]/))) {
+        $transform .= "stm$stmnum Multzero ${path} ";
     }
 
     if (($op eq "*m") && ($leftop =~/\+./ || $leftop =~/-./)) {
-        $transform .= "${path}Distribleft ";
+        $transform .= "stm$stmnum Distribleft ${path} ";
     }
 
     if (($op eq "*m") && ($rightop =~/\+./ || $rightop =~/-./)) {
-        $transform .= "${path}Distribright ";
+        $transform .= "stm$stmnum Distribright ${path} ";
     }
 
     if (($op =~/\*[vs]/ || $op eq "/s") && ($leftop =~/\+./ || $leftop =~/-./)) {
-        $transform .= "${path}Distribleft ";
+        $transform .= "stm$stmnum Distribleft ${path} ";
     }
 
     if (($op =~/\*[vs]/) && ($rightop =~/\+./ || $rightop =~/-./)) {
-        $transform .= "${path}Distribright ";
+        $transform .= "stm$stmnum Distribright ${path} ";
     }
 
     if (($op =~/[\+\-]./) && ($leftop eq $rightop) && ($leftleft eq $rightleft) && ($leftop =~/\*./)) {
-        $transform .= "${path}Factorleft ";
+        $transform .= "stm$stmnum Factorleft ${path} ";
     }
 
     if (($op =~/[\+\-]./) && ($leftop eq $rightop) && ($leftright eq $rightright) && ($leftop =~/[\*\/]./)) {
-        $transform .= "${path}Factorright ";
+        $transform .= "stm$stmnum Factorright ${path} ";
     }
 
     if (($op =~/\*./ && $rightop =~ /\*./) ||
         ($op =~/\+./ && $rightop =~/[\-+]./) ||
         ($op =~ /\*s/ && $rightop eq "/s")) {
-        $transform .= "${path}Assocleft ";
+        $transform .= "stm$stmnum Assocleft ${path} ";
     }
 
     if (($op =~/\*./ && $leftop =~ /\*./) ||
         ($op =~/[\-+]./ && $leftop =~/\+./) ||
         ($op eq "/s" && $leftop =~/\*s/)) {
-        $transform .= "${path}Assocright ";
+        $transform .= "stm$stmnum Assocright ${path} ";
     }
   
     if ((($op eq "nv" && $leftop eq "-v") ||
          ($op eq "ns" && $leftop eq "-s") ||
          ($op eq "is" && $leftop eq "/s") ||
          ($op eq "nm" && $leftop eq "-m"))) {
-        $transform .= "${path}Flipleft ";
+        $transform .= "stm$stmnum Flipleft ${path} ";
     }
 
     if ((($op eq "-s" && $rightop =~/[\-n]s/) ||
          ($op eq "/s" && $rightop =~/[\/i]s/) ||
          ($op eq "-m" && $rightop =~/[\-n]m/) ||
          ($op eq "-v" && $rightop =~/[\-n]v/))) {
-        $transform .= "${path}Flipright ";
+        $transform .= "stm$stmnum Flipright ${path} ";
     }
     if ($op eq "*m") {
-        $transform .= "${path}Transpose ";
+        $transform .= "stm$stmnum Transpose ${path} ";
     }
     if ((($op eq "-m") || ($op eq "+m"))) {
-        $transform .= "${path}Transpose ";
+        $transform .= "stm$stmnum Transpose ${path} ";
     }
     if (($op eq "tm") && ($leftop eq "*m")) {
-        $transform .= "${path}Transpose ";
+        $transform .= "stm$stmnum Transpose ${path} ";
     }
     if (($op eq "tm") && (($leftop eq "-m") || ($leftop eq "+m"))) {
-        $transform .= "${path}Transpose ";
+        $transform .= "stm$stmnum Transpose ${path} ";
     }
     if ($right eq "") {
         if ($leftop eq $op) {
-            $transform .= "${path}Double ";
+            $transform .= "stm$stmnum Double ${path} ";
         }
-        return $transform.AllPossibleAxioms($left,$path."left ");
+        return $transform.AllPossibleAxioms($left,$stmnum,$path."l");
     }
 
     my $dont_commute=0;
     if ($op =~/-./ || $op eq "/s" ||
-            ($op eq "*m" && !($leftop =~ /^.s/ || $left =~ /^[a-j01OI]/ || $rightop =~ /^.s/ || $right =~ /^[a-j01OI]/)) ||
-            ($op eq "*v" && !($leftop =~ /^.s/ || $left =~ /^[a-j01]/ || $rightop =~ /^.s/ || $right =~ /^[a-j01]/))) {
+            ($op eq "*m" && !($leftop =~ /^.s/ || $left =~ /^([01][ms]|s\d+)/ || $rightop =~ /^.s/ || $right =~ /^([01][ms]|s\d+)/)) ||
+            ($op eq "*v" && !($leftop =~ /^.s/ || $left =~ /^([01]s|s\d+)/ || $rightop =~ /^.s/ || $right =~ /^([01]s|s\d+)/))) {
         $dont_commute = 1;
     }
     if ($left ne $right && !$dont_commute) {
-            $transform .= "${path}Commute ";
+            $transform .= "stm$stmnum Commute ${path} ";
     }
-    return $transform.AllPossibleAxioms($left,$path."left ").AllPossibleAxioms($right,$path."right ");
+    return $transform.AllPossibleAxioms($left,$stmnum,$path."l").AllPossibleAxioms($right,$stmnum,$path."r");
 }
 
 1;

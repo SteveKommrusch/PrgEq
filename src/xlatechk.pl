@@ -20,8 +20,8 @@ open(my $af, "<","all_test.txt") || die "open all_test.txt failed: $!";
 my $train=0;
 my $val=0;
 while (<$tf>) {
-  /Step 59[89].0\/.* acc: +(\d+\.*\d*);/ && ($train+=$1/5);
-  /Step 60000\/.* acc: +(\d+\.*\d*);/ && ($train+=$1/5);
+  /Step 99[89].0\/.* acc: +(\d+\.*\d*);/ && ($train+=$1/5);
+  /Step 100000\/.* acc: +(\d+\.*\d*);/ && ($train+=$1/5);
   if ($train > 0 && $val == 0 && /Validation accuracy: +(\d+\.*\d*)/) {
     $val=$1;
   }
@@ -67,7 +67,7 @@ for (my $i = 0; $i < $lines; $i++) {
       if (($axiom =~ /^(Swapprev|Deletstm)$/ && $args eq "") ||
           ($axiom =~ /^(Inline|Usevar)$/ && $args=~/^ [mvs]\d+\s*$/) ||
           ($axiom =~ /^(Newtmp)$/ && $args=~/^ N[lr]* [mvs]\d+\s*$/) ||
-          ($axiom =~ /^(Cancel|Noop|Double|Multzero|commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)$/ && $args=~/^ N[lr]*\s*$/)) {
+          ($axiom =~ /^(Cancel|Noop|Double|Multzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)$/ && $args=~/^ N[lr]*\s*$/)) {
         $syntax++;
         $verbose && print "syntax ";
         my $progB = GenProgUsingAxioms($src[$i],"",$xlate[$j]." ");

@@ -27,7 +27,7 @@ while (<$src>) {
     $progAs{$progA} = 1;
     next if exists $progBs{$progB};
     $progBs{$progB} = 1;
-    my $numtokB = int(grep { !/[()]/ } split / /,$progB);
+    my $numtokB = (scalar split / /,$progB);
     my $progIntermediate=$progA;
     my $samples="";
     my %inter;
@@ -40,7 +40,7 @@ while (<$src>) {
         if ($progIntermediate eq $progAxiom) {
             die "Axiom not applied: X ${progA}Y ${progB}Z $origZ died at $Z on $progIntermediate\n";
         }
-        if (exists $inter{$progAxiom} || $progAxiom =~/TOODEEP/ || int(grep { !/[()]/ } split / /,$progAxiom) + $numtokB >= $maxTokens) {
+        if (exists $inter{$progAxiom} || $progAxiom =~/TOODEEP/ || (scalar split / /,$progAxiom) + $numtokB >= $maxTokens) {
             $progB="";  # Delete target, path too large or created loop
         }
         $inter{$progAxiom}=1;

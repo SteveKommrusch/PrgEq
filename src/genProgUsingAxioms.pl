@@ -148,7 +148,7 @@ sub GenProgUsingAxioms {
                         }
                     }
                 }
-                ($stmA =~ s/\Q$expr\E/$xvar /g) || die "$expr not found for $xvar in $stmA";
+                ($stmA =~ s/\Q$expr\E/$xvar /g);
                 $progB .= "$xvar = $expr; "; 
             }
             $progB .= $stmA." ; ";
@@ -170,7 +170,7 @@ sub GenProgUsingAxioms {
 	    my $rhs = $3;
             foreach my $var (shuffle(keys %vars)) {
                 if ($xstm eq $stmnum && $xvar eq $var) {
-                    $rhs =~ s/\Q$vars{$var}\E/$var/g || die "$rhs does not include $vars{$var}";
+                    $rhs =~ s/\Q$vars{$var}\E/$var/g;
                     last;
                 }
             }

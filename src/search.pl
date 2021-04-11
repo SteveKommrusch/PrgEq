@@ -7,7 +7,7 @@ require "../src/genProgUsingAxioms.pl";
 
 if ( ! -f $ARGV[2] || ! -f $ARGV[3] ) {
   print "Usage: search.pl beam maxtok src model\n";
-  print "    Open source file and search 12 steps to see if model can prove\n";
+  print "    Open source file and search 4 steps to see if model can prove\n";
   print "    programs equal using beam width and up to maxtok for both programs.\n";
   print "  Example: search.pl 5 all_multi_test.txt final-model_step_100000.pt\n";
   exit(1);
@@ -34,6 +34,7 @@ my $progA;
 my $progB;
 my $legal=0;
 my $illegal=0;
+my $badsyntax=0;
 
 my $lnum=0;
 while (<$fh_all>) {
@@ -51,7 +52,7 @@ while (<$fh_all>) {
 }
 close($fh_all) || die "close fh_all failed: $!";
 
-for (my $axsteps=1; $axsteps < 12; $axsteps++) {
+for (my $axsteps=1; $axsteps <= 12; $axsteps++) {
   open(my $fh_raw,">","search_raw$axsteps.txt") || die "open fh_raw failed: $!";
   for (my $i=1; $i <= $lnum; $i++) {
     for (my $j=1; $j <= $nsrc[$i]; $j++) {
@@ -60,9 +61,10 @@ for (my $axsteps=1; $axsteps < 12; $axsteps++) {
     }
   }
   close($fh_raw) || die "close fh_raw failed: $!";
-  system "../../src/pre2graph.pl < search_raw$axsteps.txt > search_all$axsteps.txt\n";
-  system "perl -ne '/^(.*) X / && print \$1.\"\\n\"' search_all$axsteps.txt > search_src-test$axsteps.txt";
-  system "cd \$OpenNMT_py; python translate.py -model \$data_path/$model -src \$data_path/search_src-test$axsteps.txt -beam_size 3 -n_best 3 -gpu 0 -output \$data_path/search_pred$axsteps.txt -dynamic_dict 2>&1 > \$data_path/search_translate$axsteps.out";
+  # system "../../src/pre2graph.pl < search_raw$axsteps.txt > search_all$axsteps.txt\n";
+  # system "perl -ne '/^(.*) X / && print \$1.\"\\n\"' search_all$axsteps.txt > search_src-test$axsteps.txt";
+  system "perl -ne '/X (.*) Z / && print \$1.\"\\n\"' search_raw$axsteps.txt > search_src-test$axsteps.txt";
+  system "onmt_translate -model $model -src search_src-test$axsteps.txt -output search_pred$axsteps.txt -gpu 0 -replace_unk -beam_size 5 -n_best 5 -batch_size 4 -verbose > search_translate$axsteps.out 2>&1";
   
   open(my $fh_pred,"<","search_pred$axsteps.txt") || die "open fh_pred failed: $!";
   for (my $i=1; $i <= $lnum; $i++) {
@@ -70,29 +72,42 @@ for (my $axsteps=1; $axsteps < 12; $axsteps++) {
     my @preds;
     my $found=0;
     $progB = $progBs[$i];
-    my $numtokB = int(grep { !/[()]/ } split / /,$progB);
+    my $numtokB = (scalar split / /,$progB);
     for (my $j=1; $j <= $nsrc[$i]; $j++) {
-      $progA=$progAs[$i][$axsteps][$j];
-      for (my $k=1; $k <= 3; $k++) {
+      for (my $k=1; $k <= 5; $k++) {
         my $ln = <$fh_pred> || die "Unexpected end of fh_pred";
-        chomp($ln);
+        chop($ln);
         $preds[$j][$k]=$ln;
       }
     }
     # Process predictions prioritizing 'best' predictions for each sample
-    for (my $k=1; $k <= 3; $k++) {
+    for (my $k=1; $k <= 5; $k++) {
       for (my $j=1; $j <= $nsrc[$i] && $new_nsrc < ($beam > 1 ? 2*$beam : $beam) && !$found; $j++) {
         $progA=$progAs[$i][$axsteps][$j];
         my $ln = $preds[$j][$k];
-        if ($ln) {
+        my $stm="";
+        my $axiom="";
+        my $args="";
+        if ($ln =~ /^(stm\d+) ([A-Z][a-z]+)(.*)$/ ) {
+          $stm=$1;
+          $axiom=$2;
+          $args=$3;
+        }
+        # Syntax check before legality attempt
+        if (($axiom =~ /^(Swapprev|Deletstm)$/ && $args eq "") ||
+          ($axiom =~ /^(Inline|Usevar)$/ && $args=~/^ [mvs]\d+\s*$/) ||
+          ($axiom =~ /^(Newtmp)$/ && $args=~/^ N[lr]* [mvs]\d+\s*$/) ||
+          ($axiom =~ /^(Cancel|Noop|Double|Multzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)$/ && $args=~/^ N[lr]*\s*$/)) {
           my $predB = GenProgUsingAxioms($progA,"",$ln." ");
-          if (($predB ne $progA) && !($ln=~/[A-Z].*[A-Z]/)) {
+          chop($predB);
+          if ($predB ne $progA && !($predB=~/FAILTOMATCH/)) {
             $legal++;
             my $progTmp=$predB;
             $progTmp=~s/[^()]//g;
             while ($progTmp =~s/\)\(//g) {};
             # Only add new programs which fit in maxToken (network size)
-            if (!$searching{$i.$predB} && !($predB=~/(TOODEEP|FAILTOMATCH)/) && ($numtokB + int(grep { !/[()]/ } split / /,$predB) < $maxTokens) && length($progTmp)/2 < 7) {
+            # And fewer than 12 statements and depth less than 7
+            if (!$searching{$i.$predB} && !($predB=~/TOODEEP/) && ($numtokB + (scalar split / /,$predB) < $maxTokens) && int(grep { /=/ } split / /,$predB) < 12 && length($progTmp)/2 < 7) {
               $new_nsrc++;
               $axioms[$i][$axsteps+1][$new_nsrc] = $axioms[$i][$axsteps][$j]." $ln";
               if ($new_nsrc <= $beam) {
@@ -112,6 +127,8 @@ for (my $axsteps=1; $axsteps < 12; $axsteps++) {
           } else {
             $illegal++;
           }
+        } else {
+          $badsyntax++;
         }
       }
     }
@@ -125,7 +142,7 @@ for (my $i=1; $i <= $lnum; $i++) {
   if ($axpath[$i]) {
     print "FOUND: $progAs[$i][1][1] to $progBs[$i] with $axpath[$i] Target path: $tgt[$i]\n";
   } else {
-    for (my $j=1; $j <= 12; $j++) {
+    for (my $j=1; $j <= 13; $j++) {
         if (! exists $axioms[$i][$j+1][1]) {
             print "FAIL: $progAs[$i][1][1] to $progBs[$i] bestguess after $j steps: $axioms[$i][$j][1] Target path: $tgt[$i]\n";
             last;
@@ -133,4 +150,4 @@ for (my $i=1; $i <= $lnum; $i++) {
     }
   }
 }
-print "Legal axiom proposals: $legal; Illegal axiom proposals: $illegal\n";
+print "Legal axiom proposals: $legal; Bad syntax: $badsyntax; Illegal axiom proposals: $illegal\n";
