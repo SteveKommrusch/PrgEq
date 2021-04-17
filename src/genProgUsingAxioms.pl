@@ -148,6 +148,9 @@ sub GenProgUsingAxioms {
                         }
                     }
                 }
+                if (! ($expr=~/^\( .[msv] .* \) $/)) {
+                    return "<PROGBFAILTOMATCH>";
+                }
                 ($stmA =~ s/\Q$expr\E/$xvar /g);
                 $progB .= "$xvar = $expr; "; 
             }

@@ -6,13 +6,13 @@ use warnings;
 require "../src/genProgUsingAxioms.pl";
 
 if (! $ARGV[1] || $ARGV[0] < 10 || ! -f $ARGV[1]) {
-  print "Usage: pre1axiom.pl maxTokens file\n";
+  print "Usage: pre1axiom.pl maxPairTokens file\n";
   print "  Transform samples in file to multiple samples each 1 axiom long.\n";
-  print "  While insuring training data fits in network input size maxTokens.\n";
+  print "  While insuring training data fits in network input size maxPairTokens.\n";
   exit(1);
 }
 
-my $maxTokens = $ARGV[0];
+my $maxPairTokens = $ARGV[0];
 open(my $src,"<",$ARGV[1]) || die "open src failed: $!";
 my %progAs;
 my %progBs;
@@ -27,7 +27,7 @@ while (<$src>) {
     $progAs{$progA} = 1;
     next if exists $progBs{$progB};
     $progBs{$progB} = 1;
-    my $numtokB = (scalar split / /,$progB);
+    my $numtokB = (scalar split /[;() ]+/,$progB);
     my $progIntermediate=$progA;
     my $samples="";
     my %inter;
@@ -40,7 +40,7 @@ while (<$src>) {
         if ($progIntermediate eq $progAxiom) {
             die "Axiom not applied: X ${progA}Y ${progB}Z $origZ died at $Z on $progIntermediate\n";
         }
-        if (exists $inter{$progAxiom} || $progAxiom =~/TOODEEP/ || (scalar split / /,$progAxiom) + $numtokB >= $maxTokens) {
+        if (exists $inter{$progAxiom} || $progAxiom =~/TOODEEP/ || (scalar split /[;() ]+/,$progAxiom) + $numtokB >= $maxPairTokens) {
             $progB="";  # Delete target, path too large or created loop
         }
         $inter{$progAxiom}=1;
