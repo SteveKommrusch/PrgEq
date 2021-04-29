@@ -982,6 +982,10 @@ while ($samples < $numSamples) {
     my @nxt_vector_avail = ();
     my @nxt_matrix_avail = ();
     my $maxRHS=2+int(rand($maxTokens/(4+scalar @outputs)));
+    if ($maxRHS > 4 && $maxRHS < int($maxTokens/(4+scalar @outputs))) {
+        # Bias selection to extreme values (more STM or more parens)
+        $maxRHS=2+int(rand($maxTokens/(4+scalar @outputs)));
+    }
     foreach my $out (@outputs) {
         $progA .= $out." === ";
         $progA .= CreateRHS($out,\@scalar_avail,\@vector_avail,\@matrix_avail,$maxRHS);
@@ -1059,7 +1063,7 @@ while ($samples < $numSamples) {
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
     next if length($progTmp)/2 > 6;
-    next if (rand() > (length($progTmp) - 2 + scalar split /;/,$progA) * 0.05);
+    next if (rand() > (length($progTmp)*30 + (scalar split /; */,$progA)**2) / 460.0);
     next if exists $progs{$progA};
     $progs{$progA} = 1;
 

@@ -3,25 +3,25 @@
 use strict;
 use warnings;
 
-require "../../src/genProgUsingAxioms.pl";
+require "../../../../../src/genProgUsingAxioms.pl";
 
-if ( ! -f "xlate.txt" || ! -f "../all_test.txt" || ! -f "train.out" || ($ARGV[0] && $ARGV[0] ne "-v")) {
-  print "Usage: xlatechk.pl \n";
+if ( ! -f "xlate.txt" || ! -f "../../../all_test.txt" || ! -f "../train.out" || ($ARGV[0] && $ARGV[0] ne "-v")) {
+  print "Usage: tunechk.pl \n";
   print "    Opens train.out, xlate.txt and all_test.txt and reports results\n";
   exit(1);
 }
 
 my $verbose=$ARGV[0];
 
-open(my $tf, "<","train.out") || die "open train.out failed: $!";
+open(my $tf, "<","../train.out") || die "open train.out failed: $!";
 open(my $xf, "<","xlate.txt") || die "open xlate.txt failed: $!";
-open(my $af, "<","../all_test.txt") || die "open all_test.txt failed: $!";
+open(my $af, "<","../../../all_test.txt") || die "open all_test.txt failed: $!";
 
 my $train=0;
 my $val=0;
 while (<$tf>) {
-  /Step 99[89].0\/.* acc: +(\d+\.*\d*);/ && ($train+=$1/5);
-  /Step 100000\/.* acc: +(\d+\.*\d*);/ && ($train+=$1/5);
+  /Step 29[89].0\/.* acc: +(\d+\.*\d*);/ && ($train+=$1/5);
+  /Step 30000\/.* acc: +(\d+\.*\d*);/ && ($train+=$1/5);
   if ($train > 0 && $val == 0 && /Validation accuracy: +(\d+\.*\d*)/) {
     $val=$1;
   }
