@@ -1,0 +1,87 @@
+# This grammar is a superset of the grammar defined for straight-line programs
+# in the paper: https://www.researchgate.net/publication/220431899_Probabilistic_Algorithms_for_Deciding_Equivalence_of_Straight-Line_Programs
+# The syntax of the grammar is an extention of the one presented for straight-line
+# programs in: http://ccom.uprrp.edu/~humberto/pages/teaching/compilers2017/expressions.html
+$maxTokens = 100
+$numSamples = 150000
+$axioms = "(Cancel|Noop|Double|Multzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose|Swapprev|Inline|Deletestm|Newtmp|Usevar)";
+# Only some outputs are considered for equivalence; 
+#  dead code is prevented (assign to a variable not used in output)
+$output_matrixes = 0
+$output_scalars  = rnd(0,2) 
+$output_vectors  = rnd(0,2) 
+$min_out = 1
+$max_out = 2
+# Statement count is selected first
+#  The number of statements will be uniformly chosen with the 
+#  low value being the number of live outputs. The high value
+#  will be max_nodes/5 (a statement requires 5 tokens minimum)
+#  The '===' token denotes assignments to required live outputs
+Stm -> Stm ; Stm                 
+    -> Scalar_id = Scalar_Exp ;                 
+    -> Vector_id = Vector_Exp ;                 
+    -> Matrix_id = Matrix_Exp ;                 
+    -> Scalar_id === Scalar_Exp ;                 
+    -> Vector_id === Vector_Exp ;                 
+    -> Matrix_id === Matrix_Exp ;                 
+Scalar_Exp -> Scalar_Exp_NoZero       p*25
+           -> 0s                       
+Scalar_Exp_NoZero -> Scalar_id                              p*4
+                  -> 1s                       
+                  -> ( +s Scalar_Exp Scalar_Exp )           p*4
+                  -> ( -s Scalar_Exp Scalar_Exp )           p*4
+                  -> ( *s Scalar_Exp Scalar_Exp )           p*4
+                  -> ( /s Scalar_Exp Scalar_Exp_NoZero )    p*4
+                  -> ( Scalar_Unary Scalar_Exp )            p*4
+Scalar_Unary -> is
+             -> ns
+Scalar_id -> s01
+          -> s02
+          -> s03
+          -> s04
+          -> s05
+          -> s06
+          -> s07
+          -> s08
+          -> s09
+          -> s10
+Vector_Exp -> Vector_id                      p*4
+           -> 0v                       
+           -> ( +v Vector_Exp Vector_Exp )   p*4
+           -> ( -v Vector_Exp Vector_Exp )   p*4
+           -> ( *v Vector_Exp Scalar_Exp )   p*3
+           -> ( *v Scalar_Exp Vector_Exp )   p*3
+           -> ( nv Vector_Exp )              p*2
+Vector_id -> v01
+          -> v02
+          -> v03
+          -> v04
+          -> v05
+          -> v06
+          -> v07
+          -> v08
+          -> v09
+          -> v10
+Matrix_Exp -> Matrix_id                               p*4
+           -> 0m
+           -> Im
+           -> ( Matrix_Binop Matrix_Exp Matrix_Exp )  p*5
+           -> ( *m Matrix_Exp Scalar_Exp )            p*3
+           -> ( *m Scalar_Exp Matrix_Exp )            p*3
+           -> ( Matrix_Unary Matrix_Exp )             p*2
+Matrix_Binop -> +m
+             -> -m
+             -> *m
+Matrix_Unary -> im
+             -> tm
+             -> nm
+Matrix_id -> m01
+          -> m02
+          -> m03
+          -> m04
+          -> m05
+          -> m06
+          -> m07
+          -> m08
+          -> m09
+          -> m10
