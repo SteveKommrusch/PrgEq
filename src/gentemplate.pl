@@ -13,7 +13,7 @@ if ($ARGV[0]) {
 }
 
 sub ProcessBlock {
-  $_=$_[0];
+  my $x=$_[0];
 
   my %vars=("0"=>"0s","1"=>"1s","2"=>"2s","3"=>"3s","4"=>"4s","pow"=>"pow");
   my $s_in=0;
@@ -22,25 +22,33 @@ sub ProcessBlock {
   my $s_fn=0;
   my $new="";
 
-  $_ && print "DBG orig:$_\n";
-  if (/=.*=.*=/ && (/= [^=;,]*[^=;,(] (\*|\/) \w/ || / (\*|\/)= \w/)) {
-    s/ \( [^\)\(]+ \* \) / /g;
-    while (s/\[ ([^\] ]+) /[ $1_/g) {};
-    s/ \[ /_idx_/g;
-    s/\.0+f* / /g;
-    s/\.[0-9]+f* /9 /g;
-    s/.\] / /g;
-    s/ -> /_ref_/g;
-    s/ \. /_elem_/g;
-    s/([=\(+\-\*\/,]) \* \(/$1 (/g;
-    s/([=\(+\-\*\/,]) \* /$1 val_/g;
-    s/ \( \S+ \w+ \) / /g;
-    s/ \( \) / /g;
-    s/ \( [^\(\)]+ \)( [\(\w])/$1/g;
-    s/; (\S+) (.)= / $1 = $1 $2 /g;
-    if (/= [^=;]*[^=;,(] (\*|\/) \w/) {
-      print "DBG prep:$_\n";
-      my $tmp=$_;
+  $x && print "DBG orig:$x\n";
+  if ($x=~/= .*=/ && (($x=~/= [^=;,]*[^=;,(] (\*|\/|pow) \w/) || ($x=~/ (\*|\/)= \w/)) && (($x=~/= [^=;,]*[^=;,(] (\+|\-) \w/) || ($x=~/ (\+|\-)= \w/))) {
+    $x=~s/ \( [^\)\(]+ \* \) / /g;
+    $x=~s/\·/_elem_/g;
+    $x=~s/\&/*/g;
+    $x=~s/\|/+/g;
+    $x=~s/([=\(+\-\*\/,]) \* \(/$1 (/g;
+    $x=~s/([=\(+\-\*\/,]) \* /$1 val_/g;
+    $x=~s/ ([0-9]+)[0-9.]*[eE][+\-]*\d+f* / 9$1 /g;
+    $x=~s/(\d)\.0*f* /$1 /g;
+    $x=~s/\.[0-9]+f* /9 /g;
+    $x=~s/ -> /_ref_/g;
+    $x=~s/ \. /_elem_/g;
+    $x=~s/ \( \S+ \w+ \) / /g;
+    $x=~s/ \( \) / /g;
+    $x=~s/ \( [^\(\)]+ \)( [\(\w])/$1/g;
+    while ($x=~s/\[ ([^\] ]+) /[ $1_/g) {};
+    $x=~s/.\][^\[]+\] / /g;
+    $x=~s/.\]//g;
+    while ($x=~s/.\[./_idx_/g) {};
+    $x=~s/\(_/array_/g;
+    $x=~s/_[\(\)\+\-\*\/\^\!,]+//g;
+    $x=~s/\)_\S+ /) /g;
+    $x=~s/; (\S+) (.)= /; $1 = $1 $2 /g;
+    if (($x=~/= [^=;]*[^=;,(] (\*|\/|pow) \w/) && ($x=~/= [^=;]*[^=;,(] (\+|\-) \w/)) {
+      print "DBG prep:$x\n";
+      my $tmp=$x;
       while ($tmp=~s/^ (\S+) = ([^;=]+ );//) {
         my $var=$1;
         my $rhs=$2;
@@ -74,7 +82,7 @@ sub ProcessBlock {
             $s_fn=0;
             $s_in=0;
             $new="";
-          } elsif (($newrhs=~/ t\d+ /) || ($newrhs=~/ i\d+.* i\d+ /)) {
+          } elsif (($newrhs=~/t\d+ /) || ($newrhs=~/i\d+.* i\d+ /)) {
             # Don't create outputs that don't use at least a temp or 2 inputs
             $s_out++;
             $vars{$var} = "o$s_out";
@@ -82,37 +90,54 @@ sub ProcessBlock {
           }
         }
       }
-      ($new =~ /=.*=/) && print "$new\n";
+      ($new =~ /^ t1 = .*= .* t\d+ /) && print "$new\n";
     }
   }
 }
 
 open(my $funcs,'-|','gunzip -cd BugFixNoDup_201?_??.tgt.txt.gz | egrep "[+\-\*\/ ]= [^{}]+ ; [^{}]+[+\-\*\/ ]= [^{}]+[+\-\*\/ ]= "') or die "Couldn't open pipe: $!";
 while (<$funcs>) {
+  s/\#.*? \/\/<S2SV>//g;
   s/ \/\/<S2SV>//g;
+  s/, (\w+ = )/; $1/g;
   my $block="";
   s/^[^{]+ \{//;
   while (s/^([^;}]+).//) {
     my $stm=$1;
-    if ($stm=~/^( return [^{};]+)/) {
-      ProcessBlock($block.$1.";");
-      $block="";
+    if ($stm=~/(<<|>>)/) {
+       $stm=~s/ << 0 / * 1 /g;
+       $stm=~s/ << 1 / * 2 /g;
+       $stm=~s/ << 2 / * 4 /g;
+       $stm=~s/ << 3 / * pow ( 2 , 3 ) /g;
+       $stm=~s/ << 4 / * pow ( 2 , 4 ) /g;
+       $stm=~s/ >> 0 / \/ 1 /g;
+       $stm=~s/ >> 1 / \/ 2 /g;
+       $stm=~s/ >> 2 / \/ 4 /g;
+       $stm=~s/ >> 3 / \/ pow ( 2 , 3 ) /g;
+       $stm=~s/ >> 4 / \/ pow ( 2 , 4 ) /g;
     }
+    $stm=~s/^return ([^{};]+)/return_value = $1/;
     if ($stm=~s/^[^{]+ \{//) {
       ProcessBlock($block);
       $block="";
     }
     if (! ($stm=~/[+\-\*\/ ]= /) ||
         $stm=~/['`"#]/ || 
-        $stm=~/ (\{|\}|\&|\%|<<|>>|NULL|for|if|goto|while|<|>|==|\?) / ||
+        $stm=~/ (\{|\}|\%|<<|>>|NULL|for|if|goto|while|<|>|==|\?) / ||
         $stm=~/,[^()]+,/ || $stm=~/,[^()]+\([^()]+\)[^()]+,/) {
       ProcessBlock($block);
       $block="";
     } else {
+      $stm=~s/ \+\+ //g;
+      $stm=~s/ \-\- //g;
+      $stm=~s/\( [^;=()]+ \) ([\+\-\*\/]*)= /$1=/;
       $stm=~s/^[^=\[\]]*( \w)/$1/;
+      $stm=~s/ \* \* / * /g;
+      $stm=~s/ \( \* ([^\)\(]+) \) / val_$1 /g;
       $stm=~s/^[^)=]*\)//;
       $block.=$stm.";";
     }
   }
+  ProcessBlock($block);
 }
 
