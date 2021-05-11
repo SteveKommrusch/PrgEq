@@ -99,6 +99,8 @@ open(my $funcs,'-|','gunzip -cd BugFixNoDup_201?_??.tgt.txt.gz | egrep "[+\-\*\/
 while (<$funcs>) {
   s/\#.*? \/\/<S2SV>//g;
   s/ \/\/<S2SV>//g;
+  s/ \+\+ / /g;
+  s/ \-\- / /g;
   s/, (\w+ = )/; $1/g;
   my $block="";
   s/^[^{]+ \{//;
@@ -136,6 +138,10 @@ while (<$funcs>) {
       $stm=~s/ \( \* ([^\)\(]+) \) / val_$1 /g;
       $stm=~s/^[^)=]*\)//;
       $block.=$stm.";";
+    }
+    if (20 < scalar split /=/,$block) {
+      ProcessBlock($block);
+      $block="";
     }
   }
   ProcessBlock($block);
