@@ -5,23 +5,24 @@ use warnings;
 
 require "../src/genProgUsingAxioms.pl";
 
-if ( ! -f $ARGV[2] || ! -d $ARGV[4] ) {
-  print "Usage: search.pl beam maxtok src model dir \n";
-  print "    Open source file and search 10 steps to see if model can prove\n";
+if ( ! -f $ARGV[3] || ! -d $ARGV[5] ) {
+  print "Usage: search.pl maxax beam maxtok src model dir \n";
+  print "    Open source file and search maxax steps to see if model can prove\n";
   print "    programs equal using beam width and up to maxtok for both programs.\n";
-  print "  Example: search.pl 5 all_multi_test.txt final-model_step_100000.pt tr_x\n";
+  print "  Example: search.pl 25 10 250 all_test_fullaxioms.txt model_step_100000.pt tr_x\n";
   exit(1);
 }
-my $model=$ARGV[3];
+my $model=$ARGV[4];
 if ( ! -f $model ) {
   print "Error: $model must be a model file\n";
   exit(1);
 }
 
-my $beam=$ARGV[0];
-my $maxTokens=$ARGV[1];
-open(my $fh_all,"<",$ARGV[2]) || die "open fh_all failed: $!";
-my $dir=$ARGV[4];
+my $maxAxioms=$ARGV[0];
+my $beam=$ARGV[1];
+my $maxTokens=$ARGV[2];
+open(my $fh_all,"<",$ARGV[3]) || die "open fh_all failed: $!";
+my $dir=$ARGV[5];
 
 my $pos=0;
 my $neg=0;
@@ -33,6 +34,7 @@ my @progBs;
 my @tgt;
 my @axpath;
 my @axioms;
+my @rare;
 my %searching;
 my @nsrc;
 my $progA;
@@ -53,11 +55,12 @@ while (<$fh_all>) {
   $progBs[$lnum]=$progB;
   $axioms[$lnum][1][1]="";
   $axpath[$lnum]="";           # No proven path yet
+  $rare[$lnum]="";             # Track rare legal axioms for learning examples
   $searching{$lnum.$progA}=1;  # Allows quick equiv check
 }
 close($fh_all) || die "close fh_all failed: $!";
 
-for (my $axsteps=1; $axsteps <= 10; $axsteps++) {
+for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
   open(my $fh_raw,">","$dir/search_raw$axsteps.txt") || die "open fh_raw failed: $!";
   for (my $i=1; $i <= $lnum; $i++) {
     for (my $j=1; $j <= $nsrc[$i]; $j++) {
@@ -87,6 +90,7 @@ for (my $axsteps=1; $axsteps <= 10; $axsteps++) {
     }
     # Process predictions prioritizing 'best' predictions for each sample
     for (my $k=1; $k <= 5; $k++) {
+      # For beam above 2, check up to 5 proposals from neural net
       for (my $j=1; $j <= $nsrc[$i] && $new_nsrc < ($beam > 2 ? 5*$beam : $beam) && !$found; $j++) {
         $progA=$progAs[$i][$axsteps][$j];
         my $ln = $preds[$j][$k];
@@ -118,10 +122,19 @@ for (my $axsteps=1; $axsteps <= 10; $axsteps++) {
               if ($new_nsrc <= $beam) {
                 $searching{$i.$predB}=1;
                 $progAs[$i][$axsteps+1][$new_nsrc] = $predB;
+              } else {
+                # Track rare legal token use as 4th choice or later after
+                #  beam is filled for later learning (hindsight learning)
+                if (($k > 3) 
+                    && (! $rare[$i] || (($ln=~/ N[lr][lr][lr][lr]/) && ! ($rare[$i]=~/ N[lr][lr][lr][lr]/)))
+                    && (($ln=~/ N[lr][lr][lr][lr]/) ||
+                        ($ln=~/Newtmp/) ||
+                        ($ln=~/Factor/) ||
+                        ($ln=~/stm20/) ||
+                        ($ln=~/stm19/))) {
+                  $rare[$i] = "X $progA Y $predB Z $ln ";
+                }
               }
-              # Check up to twice as many predictions as beam width
-              # This guarantees that at all of the 2nd-best guesses of
-              # the samples get checked.
               if ($predB eq $progB) {
                 # Found path!
                 $axpath[$i] = $axioms[$i][$axsteps+1][$new_nsrc];
@@ -147,8 +160,11 @@ for (my $i=1; $i <= $lnum; $i++) {
   if ($axpath[$i]) {
     print "FOUND: $progAs[$i][1][1] to $progBs[$i] with $axpath[$i] Target path: $tgt[$i]\n";
   } else {
-    for (my $j=1; $j <= 11; $j++) {
+    for (my $j=1; $j <= $maxAxioms + 1; $j++) {
         if (! exists $axioms[$i][$j+1][1]) {
+            if ($rare[$i]) {
+              print "RARE: $rare[$i]\n";
+            }
             print "FAIL: $progAs[$i][1][1] to $progBs[$i] bestguess after $j steps: $axioms[$i][$j][1] Target path: $tgt[$i]\n";
             last;
         }

@@ -62,7 +62,7 @@ sub GenProgUsingAxioms {
                     last;
                 }
             }
-            if (! ($rhs =~/\(.*\(.*\(/) && $eq ne "===" && ! ($rhs =~/$lhs/)) {
+            if ($eq ne "===" && ! ($rhs =~/$lhs/)) {
                 $vars{$lhs}=$rhs;
             } else {
                 (exists $vars{$lhs}) && (delete $vars{$lhs});
@@ -132,6 +132,9 @@ sub GenProgUsingAxioms {
                 }
                 my $in = 0;
                 my $expr = "";
+                if ($remain=~/^(\d*[msv]\d* )/) {
+                    $expr=$1;
+                }
                 while ($remain =~ s/^([()] )//) {
                     $expr .= "$1";
                     if ($1 eq "( ") {
@@ -148,7 +151,7 @@ sub GenProgUsingAxioms {
                         }
                     }
                 }
-                if (! ($expr=~/^\( .[msv] .* \) $/)) {
+                if (! ($expr=~/^\( \S+[msv] .* \) $/) && ! ($expr=~/^\d*[msv]\d* $/)) {
                     return "<PROGBFAILTOMATCH>";
                 }
                 ($stmA =~ s/\Q$expr\E/$xvar /g);
@@ -182,7 +185,7 @@ sub GenProgUsingAxioms {
                     delete $vars{$var};
                 }
             }
-            if (! ($rhs =~/\(.*\(.*\(.*\(.*\(/) && ($rhs =~/\(/) && $eq ne "===" && ! ($rhs =~/$lhs/)) {
+            if ($eq ne "===" && ! ($rhs =~/$lhs/)) {
                 $vars{$lhs}=$rhs;
             } else {
                 delete $vars{$lhs};
@@ -212,7 +215,7 @@ sub GenProgUsingAxioms {
     }
 
     # Process expression axioms
-    $progA =~s/^\( (..) // || return $progA;
+    $progA =~s/^\( (\S+) // || return $progA;
     my $op = $1;
     my $leftop="";
     my $rightop="";
@@ -225,7 +228,7 @@ sub GenProgUsingAxioms {
     my $newop="";
     my $newleft="";
     my $newright="";
-    if ($progA =~s/^\( (..) //) {
+    if ($progA =~s/^\( (\S+) //) {
         $in=1;
         $left = "( ".$1." ";
         $leftop = $1;
@@ -295,7 +298,7 @@ sub GenProgUsingAxioms {
         $left = $1;
     }
 
-    if ($progA =~s/^\s*\( (..) //) {
+    if ($progA =~s/^\s*\( (\S+) //) {
         $in=1;
         $right = "( ".$1." ";
         $rightop = $1;
@@ -502,16 +505,16 @@ sub GenProgUsingAxioms {
 
     if (($op =~/[\+\-]./) && ($leftop eq $rightop) && ($leftleft eq $rightleft) && ($leftop =~/\*./) && $transform =~s/^Factorleft $path *$//) {
         my $typematch=0;
-        if (($rightright =~/^\( .s / || $rightright =~/^([01]s|s\d+)/) &&
-            ($leftright =~/^\( .s / || $leftright =~/^([01]s|s\d+)/)) {
+        if (($rightright =~/^\( \S+s / || $rightright =~/^([01]s|s\d+)/) &&
+            ($leftright =~/^\( \S+s / || $leftright =~/^([01]s|s\d+)/)) {
             $typematch=1;
             $op =~s/.$/s/;
-        } elsif (($rightright =~/^\( .m / || $rightright =~/^([0I]m|m\d+)/) &&
-            ($leftright =~/^\( .m / || $leftright =~/^([0I]m|m\d+)/)) {
+        } elsif (($rightright =~/^\( \S+m / || $rightright =~/^([0I]m|m\d+)/) &&
+            ($leftright =~/^\( \S+m / || $leftright =~/^([0I]m|m\d+)/)) {
             $typematch=1;
             $op =~s/.$/m/;
-        } elsif (($rightright =~/^\( .v / || $rightright =~/^(0v|v\d+)/) &&
-            ($leftright =~/^\( .v / || $leftright =~/^(0v|v\d+)/)) {
+        } elsif (($rightright =~/^\( \S+v / || $rightright =~/^(0v|v\d+)/) &&
+            ($leftright =~/^\( \S+v / || $leftright =~/^(0v|v\d+)/)) {
             $typematch=1;
             $op =~s/.$/v/;
         }
@@ -526,16 +529,16 @@ sub GenProgUsingAxioms {
 
     if (($op =~/[\+\-]./) && ($leftop eq $rightop) && ($leftright eq $rightright) && ($leftop =~/[\*\/]./) && $transform =~s/^Factorright $path *$//) {
         my $typematch=0;
-        if (($rightleft =~/^\( .s / || $rightleft =~/^([01]s|s\d+)/) &&
-            ($leftleft =~/^\( .s / || $leftleft =~/^([01]s|s\d+)/)) {
+        if (($rightleft =~/^\( \S+s / || $rightleft =~/^([01]s|s\d+)/) &&
+            ($leftleft =~/^\( \S+s / || $leftleft =~/^([01]s|s\d+)/)) {
             $typematch=1;
             $op =~s/.$/s/;
-        } elsif (($rightleft =~/^\( .m / || $rightleft =~/^([0I]m|m\d+)/) &&
-            ($leftleft =~/^\( .m / || $leftleft =~/^([0I]m|m\d+)/)) {
+        } elsif (($rightleft =~/^\( \S+m / || $rightleft =~/^([0I]m|m\d+)/) &&
+            ($leftleft =~/^\( \S+m / || $leftleft =~/^([0I]m|m\d+)/)) {
             $typematch=1;
             $op =~s/.$/m/;
-        } elsif (($rightleft =~/^\( .v / || $rightleft =~/^(0v|v\d+)/) &&
-            ($leftleft =~/^\( .v / || $leftleft =~/^(0v|v\d+)/)) {
+        } elsif (($rightleft =~/^\( \S+v / || $rightleft =~/^(0v|v\d+)/) &&
+            ($leftleft =~/^\( \S+v / || $leftleft =~/^(0v|v\d+)/)) {
             $typematch=1;
             $op =~s/.$/v/;
         }
@@ -549,9 +552,9 @@ sub GenProgUsingAxioms {
     }
 
     if ($op =~/\*./ && $rightop =~ /\*./ && $transform =~s/^Assocleft $path *$//) {
-        if (($leftop =~ /.s/ || $left =~/^([01]s|s\d+)/) && ($rightleft =~/^. .s/ || $rightleft =~/^([01]s|s\d+)/)) {
+        if (($leftop =~ /.s/ || $left =~/^([01]s|s\d+)/) && ($rightleft =~/^. \S+s/ || $rightleft =~/^([01]s|s\d+)/)) {
           $leftop = "*s";
-        } elsif ($leftop =~ /.v/ || $left =~/^(0v|v\d+)/ || $rightleft =~/^. .v/ || $rightleft =~/^(0v|v\d+)/) {
+        } elsif ($leftop =~ /.v/ || $left =~/^(0v|v\d+)/ || $rightleft =~/^. \S+v/ || $rightleft =~/^(0v|v\d+)/) {
           $leftop = "*v";
         } else {
           $leftop = "*m";
@@ -570,9 +573,9 @@ sub GenProgUsingAxioms {
     }
 
     if ($op =~/\*./ && $leftop =~ /\*./ && $transform =~s/^Assocright $path *$//) {
-        if (($rightop =~ /.s/ || $right =~/^([01]s|s\d+)/) && ($leftright =~/^. .s/ || $leftright =~/^([01]s|s\d+)/)) {
+        if (($rightop =~ /.s/ || $right =~/^([01]s|s\d+)/) && ($leftright =~/^. \S+s/ || $leftright =~/^([01]s|s\d+)/)) {
           $rightop = "*s";
-        } elsif ($rightop =~ /.v/ || $right =~/^(0v|v\d+)/ || $leftright =~/^. .v/ || $leftright =~/^(0v|v\d+)/) {
+        } elsif ($rightop =~ /.v/ || $right =~/^(0v|v\d+)/ || $leftright =~/^. \S+v/ || $leftright =~/^(0v|v\d+)/) {
           $rightop = "*v";
         } else {
           $rightop = "*m";
@@ -615,13 +618,13 @@ sub GenProgUsingAxioms {
         return "( $newop $newleft $newright )";
     }
     if ($op eq "*m" && $transform =~s/^Transpose $path *$//) {
-        if (($right =~ /^m\d/) || ($right =~ /^\( .m/)) {
+        if (($right =~ /^m\d/) || ($right =~ /^\( \S+m/)) {
             $newleft = GenProgUsingAxioms("$right",$path."lll",$transform);
             $newleft = "( tm $newleft )";
         } else {
             $newleft = GenProgUsingAxioms("$right",$path."ll",$transform);
         }
-        if (($left =~ /^m\d/) || ($left =~ /^\( .m/)) {
+        if (($left =~ /^m\d/) || ($left =~ /^\( \S+m/)) {
             $newright= GenProgUsingAxioms("$left",$path."lrl",$transform);
             $newright = "( tm $newright )";
         } else {
@@ -636,13 +639,13 @@ sub GenProgUsingAxioms {
     }
     if (($op eq "tm") && ($leftop eq "*m") && $transform =~s/^Transpose $path *$//) {
         # Scalar values are allowed, but they don't transpose
-        if (($leftright =~ /^m\d/) || ($leftright =~ /^\( .m/)) {
+        if (($leftright =~ /^m\d/) || ($leftright =~ /^\( \S+m/)) {
             $newleft = GenProgUsingAxioms("$leftright",$path."ll",$transform);
             $newleft = "( tm $newleft )";
         } else {
             $newleft = GenProgUsingAxioms("$leftright",$path."l",$transform);
         }
-        if (($leftleft =~ /^m\d/) || ($leftleft =~ /^\( .m/)) {
+        if (($leftleft =~ /^m\d/) || ($leftleft =~ /^\( \S+m/)) {
             $newright= GenProgUsingAxioms("$leftleft",$path."rl",$transform);
             $newright = "( tm $newright )";
         } else {
@@ -665,9 +668,9 @@ sub GenProgUsingAxioms {
     }
 
     my $dont_commute=0;
-    if ($op =~/-./ || $op eq "/s" ||
-            ($op eq "*m" && !($leftop =~ /^.s/ || $left =~ /^([01][ms]|s\d+)/ || $rightop =~ /^.s/ || $right =~ /^([01][ms]|s\d+)/)) ||
-            ($op eq "*v" && !($leftop =~ /^.s/ || $left =~ /^([01]s|s\d+)/ || $rightop =~ /^.s/ || $right =~ /^([01]s|s\d+)/))) {
+    if ($op =~/^[\-fghuv]/ || $op eq "/s" ||
+            ($op eq "*m" && !($leftop =~ /.s/ || $left =~ /^([01][ms]|s\d+)/ || $rightop =~ /.s/ || $right =~ /^([01][ms]|s\d+)/)) ||
+            ($op eq "*v" && !($leftop =~ /.s/ || $left =~ /^([01]s|s\d+)/ || $rightop =~ /.s/ || $right =~ /^([01]s|s\d+)/))) {
         $dont_commute = 1;
     }
     if ($left ne $right && !$dont_commute && $transform =~s/^Commute $path *$//) {

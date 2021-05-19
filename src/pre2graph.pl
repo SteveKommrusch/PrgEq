@@ -56,7 +56,7 @@ sub place {
         return;
     }
 
-    if ($prog =~s/^\( (..) //) {
+    if ($prog =~s/^\( (\S+) //) {
         my $op = $1;
         my $left;
         my $right = "";

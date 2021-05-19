@@ -153,9 +153,9 @@ sub AllPossibleAxioms {
         return $transform;
     }
 
-    $progA =~s/^\( (..) // || return "";
+    $progA =~s/^\( (\S+) // || return "";
     $op = $1;
-    if ($progA =~s/^\( (..) //) {
+    if ($progA =~s/^\( (\S+) //) {
         $in=1;
         $left = "( ".$1." ";
         $leftop = $1;
@@ -225,7 +225,7 @@ sub AllPossibleAxioms {
         $left = $1;
     }
 
-    if ($progA =~s/^\s*\( (..) //) {
+    if ($progA =~s/^\s*\( (\S+) //) {
         $in=1;
         $right = "( ".$1." ";
         $rightop = $1;
@@ -421,9 +421,9 @@ sub AllPossibleAxioms {
     }
 
     my $dont_commute=0;
-    if ($op =~/-./ || $op eq "/s" ||
-            ($op eq "*m" && !($leftop =~ /^.s/ || $left =~ /^([01][ms]|s\d+)/ || $rightop =~ /^.s/ || $right =~ /^([01][ms]|s\d+)/)) ||
-            ($op eq "*v" && !($leftop =~ /^.s/ || $left =~ /^([01]s|s\d+)/ || $rightop =~ /^.s/ || $right =~ /^([01]s|s\d+)/))) {
+    if ($op =~/^[\-fghuv]/ || $op eq "/s" ||
+            ($op eq "*m" && !($leftop =~ /.s/ || $left =~ /^([01][ms]|s\d+)/ || $rightop =~ /.s/ || $right =~ /^([01][ms]|s\d+)/)) ||
+            ($op eq "*v" && !($leftop =~ /.s/ || $left =~ /^([01]s|s\d+)/ || $rightop =~ /.s/ || $right =~ /^([01]s|s\d+)/))) {
         $dont_commute = 1;
     }
     if ($left ne $right && !$dont_commute) {

@@ -1,3 +1,4 @@
+THIS SHOULD BE OBSOLETE
 #!/usr/bin/perl
 #
 use strict;
@@ -53,6 +54,7 @@ while (<$fh_all>) {
   $progBs[$lnum]=$progB;
   $axioms[$lnum][1][1]="";
   $axpath[$lnum]="";           # No proven path yet
+  $rare[$lnum]="";             # Track rare legal axioms for learning examples
   $searching{$lnum.$progA}=1;  # Allows quick equiv check
 }
 close($fh_all) || die "close fh_all failed: $!";
@@ -87,6 +89,7 @@ for (my $axsteps=1; $axsteps <= 25; $axsteps++) {
     }
     # Process predictions prioritizing 'best' predictions for each sample
     for (my $k=1; $k <= 5; $k++) {
+      # For beam above 2, check up to 5 proposals from neural net
       for (my $j=1; $j <= $nsrc[$i] && $new_nsrc < ($beam > 2 ? 5*$beam : $beam) && !$found; $j++) {
         $progA=$progAs[$i][$axsteps][$j];
         my $ln = $preds[$j][$k];
@@ -118,10 +121,19 @@ for (my $axsteps=1; $axsteps <= 25; $axsteps++) {
               if ($new_nsrc <= $beam) {
                 $searching{$i.$predB}=1;
                 $progAs[$i][$axsteps+1][$new_nsrc] = $predB;
+              } else {
+                # Track rare legal token use as 4th choice or later after
+                #  beam is filled for later learning (hindsight learning)
+                if (($k > 3) 
+                    && (! $rare[$i] || (($ln=~/ N[lr][lr][lr][lr]/) && ! ($rare[$i]=~/ N[lr][lr][lr][lr]/)))
+                    && (($ln=~/ N[lr][lr][lr][lr]/) ||
+                        ($ln=~/Newtmp/) ||
+                        ($ln=~/Factor/) ||
+                        ($ln=~/stm20/) ||
+                        ($ln=~/stm19/)) {
+                  $rare[$i] = "X $progA Y $predB Z $ln ";
+                }
               }
-              # Check up to twice as many predictions as beam width
-              # This guarantees that at all of the 2nd-best guesses of
-              # the samples get checked.
               if ($predB eq $progB) {
                 # Found path!
                 $axpath[$i] = $axioms[$i][$axsteps+1][$new_nsrc];
@@ -149,6 +161,9 @@ for (my $i=1; $i <= $lnum; $i++) {
   } else {
     for (my $j=1; $j <= 26; $j++) {
         if (! exists $axioms[$i][$j+1][1]) {
+            if ($rare[$i]) {
+              print "RARE: $rare[$i]\n";
+            }
             print "FAIL: $progAs[$i][1][1] to $progBs[$i] bestguess after $j steps: $axioms[$i][$j][1] Target path: $tgt[$i]\n";
             last;
         }
