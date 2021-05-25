@@ -115,7 +115,7 @@ sub ExpandNonTerm {
         return $tmplist[ rand @tmplist ];
     }
     if (! $nonTerm{$expr_type}) {
-        die "No expansion rule for $expr_type\n";
+        die "No expansion rule for $expr_type";
     }
     @tmplist = @{$nonTerm{$expr_type}};
     @tmplist = split / /,($tmplist[ rand @tmplist ]);
@@ -240,7 +240,7 @@ sub InterAssignAxioms {
         $stmnum=1;
         while ($progA =~ s/^([^;]+); //) {
             my $stmA = $1;
-            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || die "Illegal statement in dead code check: $stmA\n"; 
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || die "Illegal statement in dead code check: $stmA"; 
             my $lhs = $1;
             my $eq = $2;
             my $rhs = $3;
@@ -366,7 +366,7 @@ sub GenerateStmBfromStmA {
         my $leftdone=0;
         my $loopcnt = 0;
         while ($in >0) {
-            $loopcnt++ > 100 && die "Infinite loop with $_[0], transform = $transform\n";
+            $loopcnt++ > 100 && die "Infinite loop with $_[0], transform = $transform";
             if ($progA =~s/^(\s*)([^()\s]+)(\s*)//) {
                 $left .= $1.$2.$3;
                 if ($leftdone) {
@@ -435,7 +435,7 @@ sub GenerateStmBfromStmA {
         my $leftdone=0;
         my $loopcnt = 0;
         while ($in >0) {
-            $loopcnt++ > 100 && die "Infinite loop with $_[0], transform = $transform\n";
+            $loopcnt++ > 100 && die "Infinite loop with $_[0], transform = $transform";
             if ($progA =~s/^(\s*)([^()\s]+)(\s*)//) {
                 $right .= $1.$2.$3;
                 if ($leftdone) {
@@ -947,12 +947,19 @@ sub NextArgs {
 
     my $in=1;
     my $arg1="";
+    if ($line=~s/^([^(), fu]+) ([),]) //) {
+      $arg1=$1;
+      if ($2 eq ")") {
+        return ($arg1,"",$line);
+      }
+      $in=0;
+    }
     while ($in > 0) {
       if ($line=~s/^\( //) {
         $arg1 .= "( ";
         $in++;
       }
-      if ($line=~s/^([^(),]* )//) {
+      if ($line=~s/^([^(),]+ )//) {
         $arg1 .= $1;
       }
       if ($line=~s/^\) //) {
@@ -974,12 +981,16 @@ sub NextArgs {
     $arg1 =~s/ $//;
     my $arg2="";
     $in=1;
+    if ($line=~s/^([^(), fu]+) ([),]) //) {
+      $arg2=$1;
+      $in=0;
+    }
     while ($in > 0) {
       if ($line=~s/^\( //) {
         $arg2 .= "( ";
         $in++;
       }
-      if ($line=~s/^([^()]* )//) {
+      if ($line=~s/^([^()]+ )//) {
         $arg2 .= $1;
       }
       if ($line=~s/^[\)] //) {
@@ -997,18 +1008,18 @@ sub NextArgs {
 sub NextExpr {
     my $line = $_[0];
 
-    if ($line=~s/^([^( ]+) //) {
+    if ($line=~s/^([^( fu]+) //) {
       return ($1,$line);
     } 
-    ($line=~s/^\( //) || die "Bad syntaxt: $line";
+    ($line=~s/^([fu]*\S*\s*\( )//) || die "BADSYNTAX, expected '(':",$line;
+    my $expr="$1";
     my $in=1;
-    my $expr="( ";
     while ($in > 0) {
       if ($line=~s/^\( //) {
         $expr .= "( ";
         $in++;
       }
-      if ($line=~s/^([^()]* )//) {
+      if ($line=~s/^([^()]+ )//) {
         $expr .= $1;
       }
       if ($line=~s/^\) //) {
@@ -1021,13 +1032,13 @@ sub NextExpr {
     return ($expr,$line);
 }
 
-sub LastExpr {
+sub PrevExpr {
     my $line = $_[0];
 
     if ($line=~s/ ([^) ]+)$//) {
-      return ($line,$1);
+      return ($1,$line);
     } 
-    ($line=~s/ \)$//) || die "Bad syntaxt: $line";
+    ($line=~s/ \)$//) || die "BADSYNTAX, expected ')':",$line;
     my $in=1;
     my $expr=" )";
     while ($in > 0) {
@@ -1035,17 +1046,17 @@ sub LastExpr {
         $expr = " )".$expr;
         $in++;
       }
-      if ($line=~s/( [^()]*)$//) {
+      if ($line=~s/( [^()]+)$//) {
         $expr = $1.$expr;
       }
-      if ($line=~s/ \(//) {
+      if ($line=~s/ \($//) {
         $expr = " (".$expr;
         $in--;
       }
     }
     $expr =~s/^ //;
 
-    return ($line,$expr);
+    return ($expr,$line);
 }
 
 open(my $templates,"<",$ARGV[1]);
@@ -1054,6 +1065,17 @@ while (<$templates>) {
     my $template=$_;
     chop($template);
     my $samples="";
+    # Check for bad syntax
+    $template=~s/~/-/g;
+    $template=~s/^/\+/g;
+    $template=~s/( [=\+\-\*\/,(]) \+/$1/g;
+    next if $template=~/ [fu]\S+ [^(]/;
+    next if $template=~/ [=\*\-\+\/,;] [=,\);]/;
+    next if $template=~/ [ito]\S+ \(/;
+    next if $template=~/ , \([^)]+\([^)]+\([^()]+\)[^(]+\)[^(]+\) [;(]/;
+    next if $template=~/ , \([^)]+\([^()]+\)[^(]+\) [;(]/;
+    next if $template=~/ , \([^()]+\) [;(]/;
+    next if $template=~/ , [^()]+ ;/;
 
     # Process 'pow' functions
     while ($template=~/^(.*) pow \( (.*)$/) {
@@ -1062,7 +1084,7 @@ while (<$templates>) {
       if ($pow[0] =~/[^(]+ \S/) {
         $pow[0] = "( $pow[0] )";
       }
-      $pow[1] || die "$template;$pow[0];$pow[2] failed pow arg check\n";
+      $pow[1] || die "$template;$pow[0];$pow[2] failed pow arg check";
       if ($pow[1] eq "1s") {
         $template.=" $pow[0] $pow[2]";
       } elsif ($pow[1] eq "2s") {
@@ -1078,36 +1100,39 @@ while (<$templates>) {
         $template.=" ( $pow[0] * $pow[0] ) $pow[2]";
       }
     }
+    ($template=~/ = [^;] o\d/) && die "Output used in other variable";
+    # Collapse down to 2 outputs
+    while ($template=~s/; o(\d+) (=.*?; o\d+ =.*?; o\d+ =)/; p$1 $2 p$1 +/) {} 
 
     my $lcl=1;
     # Attempt Common Subexpression Removal
     my $cse=";".$template;
     # Use then delete simple variable assigns
     while ($cse=~s/ (\S+) = (\S+) ; (.*)\1 / $1 = $2 ; $3$2 /) {} 
-    $cse=~s/ ([tl]\d+) = (\S+) ;//;
-    while ($cse=~s/ ([tl]\d+) = ([^;]+) ; (.*)\2 / $1 = $2 ; $3$1 /) {} 
+    $cse=~s/ ([tlp]\d+) = (\S+) ;//;
+    while ($cse=~s/ ([tlp]\d+) = ([^-][^;]+) ; (.*)\2 / $1 = $2 ; $3$1 /) {} 
     # Process * and / CSEs then handle + and - to find first use of an expression that occurs twice
     # Search for 7 patterns of parens (not a full search) with consideration of order of operations
-    while (($cse=~/^(.*?)(;[^;]*[\(\+\-\*=,] )([^()\+\-\/;]*\([^()]*\( [^()]* \)[^()]*\) [^()\+\-\/;]*[\/\*] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+\-\*=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+\-\*=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+\-\*=,] )([^()\+\-\/;]*\([^()]*\( [^()]* \)[^()]*\) [^()\+\-\/;]*[\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] [^()\+\-\*\/;f]*)( .*[\(\+\-\*=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+\-\*=,] )([^()\+\-\/;]* [\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/)
-        || ($cse=~/^(.*?)(;[^;]*[\(\+\-\*=,] )([^()\+\-\/;]* [\/\*] [^()\+\-\*\/;f]*)( .*[\(\+\-\*=,] )\3( .*)/)
-        || ($cse=~/^(.*?)(;[^;]*[\(\+\-\*\/=,] )(f\d+ \( [^()] \))( .*[\(\+\-\*\/=,] )\3( .*)/)) {
+    while (($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\([^()]*\( [^()]* \)[^()]*\) [^()\+\-\/;]*[\/\*] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+\-\*=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+\-\*=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\([^()]*\( [^()]* \)[^()]*\) [^()\+\-\/;]*[\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] [^()\+\-\*\/;f]*)( .*[\(\+\-\*=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]* [\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/)
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]* [\/\*] [^()\+\-\*\/;f]*)( .*[\(\+\-\*=,] )\3( .*)/)
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*\/=,] )(f\d+ \( [^()] \))( .*[\(\+\-\*\/=,] )\3( .*)/)) {
       $cse="$1; l$lcl = $3 $2l$lcl$4l$lcl$5";
       # Use new variable wherever possible in program
       while ($cse=~s/ l$lcl = ([^;]+) ; (.*[\(\+\-\*=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
       $lcl++;
     }
-    while (($cse=~/^(.*?)(;[^;]*[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] [^()\+\-;f]*)( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*[\(\+=,] )([^();]* [\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/)
-        || ($cse=~/^(.*?)(;[^;]*[\(\+=,] )([^();]* [\+\-] [^()\+\-;f]*)( .*[\(\+=,] )\3( .*)/)) {
+    while (($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] [^()\+\-;f]*)( .*[\(\+=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/)
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] [^()\+\-;f]*)( .*[\(\+=,] )\3( .*)/)) {
       $cse="$1; l$lcl = $3 $2l$lcl$4l$lcl$5";
       # Use new variable wherever possible in program
       while ($cse=~s/ l$lcl = ([^;]+) ; (.*[\(\+=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
@@ -1128,6 +1153,10 @@ while (<$templates>) {
            ($str=~s/([\(=,\+]) ([a-z\d \*]*\( [^()]+ \)) ([\*\/]) (\S+)( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) ([a-z\d \*]*\( [^()]+ \)) \3 \4 ([\),\+\-;])/$1 ( $2 $6 $7 ) $3 $4$5$8/) ||
            ($str=~s/([\(=,\+]) ([a-z\d \*]*) ([\*\/]) (f*\d* *\( [^()]+ \))( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) ([a-z\d \*]*\( [^()]+ \)) \3 \4 ([\),\+\-;])/$1 ( $2 $6 $7 ) $3 $4$5$8/) ||
            ($str=~s/([\(=,\+]) ([a-z\d \*]*\( [^()]+ \)) ([\*\/]) (f*\d* *\( [^()]+ \))( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) ([a-z\d \*]*\( [^()]+ \)) \3 \4 ([\),\+\-;])/$1 ( $2 $6 $7 ) $3 $4$5$8/) ||
+           ($str=~s/([\(=,\+]) ([a-z\d \*]*) ([\*]) ([a-z\d \*]*)( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) ([a-z\d \*]*) \3 \2 ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
+           ($str=~s/([\(=,\+]) ([a-z\d \*]*\( [^()]+ \)) ([\*]) ([a-z\d \*]*)( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) ([a-z\d \*]*) \3 \2 ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
+           ($str=~s/([\(=,\+]) ([a-z\d \*]*) ([\*]) ([a-z\d \*]*\( [^()]+ \))( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) ([a-z\d \*]*) \2 \3 ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
+           ($str=~s/([\(=,\+]) ([a-z\d \*]*) ([\*]) ([a-z\d \*]*)( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) ([a-z\d \*]*\( [^()]+ \)) \3 \2 ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
            ($str=~s/([\(=,\+]) ([a-z\d \*]*) ([\*]) ([a-z\d \*]*)( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) \2 \3 ([a-z\d \*]*) ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
            ($str=~s/([\(=,\+]) ([a-z\d \*]*\( [^()]+ \)) ([\*]) ([a-z\d \*]*)( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) \2 \3 ([a-z\d \*]*) ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
            ($str=~s/([\(=,\+]) ([a-z\d \*]*) ([\*]) ([a-z\d \*]*\( [^()]+ \))( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) \2 \3 ([a-z\d \*]*) ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
@@ -1135,8 +1164,21 @@ while (<$templates>) {
            ($str=~s/([\(=,\+]) ([a-z\d \*]*\( [^()]+ \)) ([\*]) ([a-z\d \*]*\( [^()]+ \))( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) \2 \3 ([a-z\d \*]*) ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
            ($str=~s/([\(=,\+]) ([a-z\d \*]*\( [^()]+ \)) ([\*]) ([a-z\d \*]*)( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) \2 \3 ([a-z\d \*]*\( [^()]+ \)) ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
            ($str=~s/([\(=,\+]) ([a-z\d \*]*) ([\*]) ([a-z\d \*]*\( [^()]+ \))( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) \2 \3 ([a-z\d \*]*\( [^()]+ \)) ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
-           ($str=~s/([\(=,\+]) ([a-z\d \*]*\( [^()]+ \)) ([\*]) ([a-z\d \*]*\( [^()]+ \))( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) \2 \3 ([a-z\d \*]*\( [^()]+ \)) ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/))
+           ($str=~s/([\(=,\+]) ([a-z\d \*]*\( [^()]+ \)) ([\*]) ([a-z\d \*]*\( [^()]+ \))( | [\+\-][^();]* | [\+\-][^();]*\([^();]*\)[^();]*)([\+\-]) \2 \3 ([a-z\d \*]*\( [^()]+ \)) ([\),\+\-;])/$1 $2 $3 ( $4 $6 $7 )$5$8/) ||
+           ($str=~s/([\(=,\+]) 2s ([\*]) ([iotlp\d]+) ([\),\+\-;])/$1 $3 + $3 $4/) ||
+           ($str=~s/([\(=,\+]) ([iotlp\d]+) ([\*]) 2s ([\),\+\-;])/$1 $2 + $2 $4/))
        {}
+    while (($str=~/^(.*?)(;[^;]*[\(\+=,] ) 2s \* ([iotlp\d]+) ([\),\+\-;])/)
+        || ($str=~/^(.*?)(;[^;]*[\(\+=,] ) 2s \* ([a-z\d \*]*\( [^()]* \) [a-z\d \*]*) ([\),\+\-;])/)
+        || ($str=~/^(.*?)(;[^;]*[\(\+=,] ) 2s \* ([a-z\d \*]*\( [^()]*\( [^()]* \)[^()]*\) [a-z\d \*]*) ([\),\+\-;])/)
+        || ($str=~/^(.*?)(;[^;]*?[\(\+=,] ) ([iotlp\d]+) \* 2s ([\),\+\-;])/)
+        || ($str=~/^(.*?)(;[^;]*?[\(\+=,] ) ([a-z\d \*]*\( [^()]* \) [a-z\d \*]*) \* 2s ([\),\+\-;])/)
+        || ($str=~/^(.*?)(;[^;]*?[\(\+=,] ) ([a-z\d \*]*\( [^()]*\( [^()]* \)[^()]*\) [a-z\d \*]*) \* 2s ([\),\+\-;])/)) {
+      $str="$1; l$lcl = $3 $2l$lcl + l$lcl $4";
+      # Use new variable wherever possible in program
+      while ($str=~s/ l$lcl = ([^;]+) ; (.*[\(\+=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
+      $lcl++;
+    }
     $str=~s/^;//;
     if ($cse ne $str) {
       print "DBG: cse:$cse, str:$str.\n";
@@ -1145,21 +1187,204 @@ while (<$templates>) {
     # Rename variables
     @{$nonTerm{'Scalar_id'}} = shuffle(@{$nonTerm{'Scalar_id'}});
     @{$nonTerm{'Vector_id'}} = shuffle(@{$nonTerm{'Vector_id'}});
-    my $renamed="";
-    my $scalarnum=1;
+    my $renamed;
+    my $scalarnum=0;
+    my $func1in=0;
+    my $func2in=0;
     my %mapping;
     my $lastout=0;
-    foreach my $tok (split / /,$template) {
-      if (exists $mapping{$tok}) {
-        $renamed .= "$mapping{$tok} ";
-      } elsif ($tok=~/=/ && $lastout) {
-        $renamed .= "=== ";
-      } elsif ($tok=~/[tloi]\d+/) {
-        $mapping{$tok} = sprintf "s%2d",$scalarnum;
-        $renamed .= sprintf "s%2d ",$scalarnum;
-      } elsif ($tok=~/f\d+[^;],/) {
-      } elsif ($tok=~/f\d+/) {
+    my $tmp;
+    for (my $i=1; $i<4; $i++) {
+      $renamed="";
+      if ($i==1) {
+        $tmp=$template;
+      } elsif ($i==2) {
+        $tmp=$cse;
+      } else {
+        $tmp=$str;
       }
-      $lastout = ($tok=~/^o/);
+      while ($tmp=~/^(.*?) (f\d+) \( (.*)$/) {
+        $tmp=$1;
+        my $func_name=$2;
+        my @args=NextArgs($3);
+        if ($args[1]) {
+          if (! exists $mapping{$func_name}) {
+            $mapping{$func_name} = sprintf "f%ds",($func2in % 5) + 1;
+            $func2in++;
+          }
+          $tmp .= " $mapping{$func_name} ( $args[0] , $args[1] ) ";
+        } else {
+          if (! exists $mapping{$func_name}) {
+            $mapping{$func_name} = sprintf "u%ds",($func1in % 5) + 1;
+            $func1in++;
+          }
+          $tmp .= " $mapping{$func_name} ( $args[0] ) ";
+        }
+        $tmp.=$args[2];
+      }
+      print "DBG: i=$i, tmp=$tmp\n";
+      while ($tmp=~s/^ (\S+)//) {
+        my $tok = $1;
+        if (exists $mapping{$tok}) {
+          $renamed .= " $mapping{$tok}";
+        } elsif ($tok=~/=/ && $lastout) {
+          $renamed .= " ===";
+        } elsif ($tok=~/[iotlp]\d+/) {
+          if ($scalarnum < scalar @{$nonTerm{'Scalar_id'}}) {
+            $mapping{$tok} = @{$nonTerm{'Scalar_id'}}[$scalarnum];
+            $scalarnum++;
+          } elsif ($renamed=~s/ (\S+) = (\S+) ;//) {
+            my $old=$1;
+            my $new=$2;
+            $renamed=~s/$old /$new /;
+            $mapping{$tok} = $old;
+          } else {
+            $mapping{$tok} = "OVERFLOW";
+          }
+          $renamed .= " $mapping{$tok}";
+        } else {
+          $renamed .= " $tok";
+        }
+        $lastout = ($tok=~/^o/);
+      }
+      if ($renamed =~/OVERFLOW/) {
+          print "Too many scalars, skipping\n";
+          $i=5;
+          next;
+      }
+      $renamed=~s/([\(=\+\-\*\/,]) \( (\S+) \)/$1 $2/;
+      print "DBG: renamed:$renamed\n";
+      while ($renamed=~/^(.*[\(=\+\-\*\/]) - (.*)$/) {
+        my $prev=$1;
+        my $next=$2;
+        my @nextexp=NextExpr($next);
+        $renamed="$prev ( ns $nextexp[0] ) $nextexp[1]";
+      }
+      $tmp=$renamed;
+      $tmp=~s/^(.*) ([fu]\d+s) \(.*$/$1/;
+      while ($renamed=~/^\Q$tmp\E ([fu]\d+s) \( (.*)$/) {
+        my $function=$1;
+        my $next=$2;
+        my @args=NextArgs($next);
+        if ($args[1]) {
+          $renamed="$tmp ( $function $args[0] $args[1] ) $args[2]";
+        } else {
+          $renamed="$tmp ( $function $args[0] ) $args[2]";
+        }
+        $tmp=~s/^(.*) ([fu]\d+s) \(.*$/$1/;
+      }
+      print "DBG: renamed ns,func:$renamed\n";
+      while ($renamed=~/^(.*) \/ (.*)$/) {
+        my $prev=$1;
+        my $next=$2;
+        my @prevexp=PrevExpr($prev);
+        my @nextexp=NextExpr($next);
+        $renamed="$prevexp[1] ( /s $prevexp[0] $nextexp[0] ) $nextexp[1]";
+      }
+      print "DBG: renamed /:$renamed\n";
+      while ($renamed=~/^(.*) \* (.*)$/) {
+        my $prev=$1;
+        my $next=$2;
+        my @prevexp=PrevExpr($prev);
+        my @nextexp=NextExpr($next);
+        $renamed="$prevexp[1] ( *s $prevexp[0] $nextexp[0] ) $nextexp[1]";
+      }
+      print "DBG: renamed *:$renamed\n";
+      while ($renamed=~/^(.*) \- (.*)$/) {
+        my $prev=$1;
+        my $next=$2;
+        my @prevexp=PrevExpr($prev);
+        my @nextexp=NextExpr($next);
+        $renamed="$prevexp[1] ( -s $prevexp[0] $nextexp[0] ) $nextexp[1]";
+      }
+      while ($renamed=~/^(.*) \+ (.*)$/) {
+        my $prev=$1;
+        my $next=$2;
+        my @prevexp=PrevExpr($prev);
+        my @nextexp=NextExpr($next);
+        $renamed="$prevexp[1] ( +s $prevexp[0] $nextexp[0] ) $nextexp[1]";
+      }
+      print "DBG: renamed ops:$renamed\n";
+      $tmp = $renamed;
+      $renamed="";
+      while ($tmp=~s/^ (\S+)//) {
+        my $tok = $1;
+        if ($tok eq "(" && ($tmp=~s/^ \(/(/)) {
+          my @nextexp =NextExpr($tmp);
+          $renamed.=" $nextexp[0]";
+          $tmp=" $nextexp[1]";
+          $tmp=~s/^ \)// || die "Expected close paren in $renamed...$tmp";
+        } else {
+          $renamed.=" $tok";
+        }
+      }
+      print "DBG: renamed redundant paren:$renamed\n";
+      # Attempt to prevent deep expression trees
+      while (($renamed=~/^(.* )(\S+ = [^;]*?\([^();]*\([^();]*\([^();]*\([^();]*)(\([^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
+          || ($renamed=~/^(.* )(\S+ = [^;]*?)(\([^();,]*\([^();,]*\)[^();,]*\))([^();]*\)[^();]*\)[^();]*\)[^();]*\).*)$/)
+          || ($renamed=~/^(.* )(\S+ = [^;]*?\([^();]*\([^();]*\([^();]*\([^();]*)(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
+          || ($renamed=~/^(.* )(\S+ = [^;]*?)(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))([^();]*\)[^();]*\)[^();]*\)[^();]*\).*)$/)) {
+        $renamed="$1l$lcl = $3 ; $2l$lcl$4";
+        # Use new variable wherever possible in program
+        while ($renamed=~s/ l$lcl = ([^;]+) ; (.*[\(\+=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
+        $lcl++;
+      }
+      print "DBG: limit paren:$renamed\n";
+      my $reuse=$renamed;
+      my %progs;
+      while (! exists $progs{$reuse}) {
+        $progs{$reuse}=1;
+        for (my $j = 0; $j < $scalarnum; $j++) {
+          my $var= @{$nonTerm{'Scalar_id'}}[$j];
+          # Find last use of var and see if we can reuse it
+          if ($reuse=~/^(.*) (\S+) = ([^;]* $var [^;]*;)(.*)$/) {
+            my $prev=$1;
+            my $old=$2;
+            my $expr=$3;
+            my $next=$4;
+            if (! ($next=~/$var /)) {
+              $next=~s/$old /$var /g;
+              if (! exists $progs{"$prev $var = $expr$next"}) {
+                $reuse="$prev $var = $expr$next";
+                print "DBG: Use $var later instead of $old:$reuse.\n";
+                last;
+              }
+            }
+          }
+          # Find first assignment of var and see if we can replace a prior var
+          if ($reuse=~/^(.*?) $var (=+) ([^;]*)(.*)$/) {
+            print "DBG: Checking $var in $reuse.\n";
+            my $prev=$1;
+            my $eq=$2;
+            my $expr=$3;
+            my $next=$4;
+            $tmp=$prev;
+            print "DBG: tmp=$tmp.\n";
+            while ($tmp=~/^(.*) (\S+) =( .*)$/) {
+              my $old=$2;
+              my $remain=$3;
+              $tmp=$1;
+              print "DBG: Checking $old(=>$var) =$remain.\n";
+              if (! ($next=~/ $old /) && ! ($tmp =~/ $old /) && ! ($remain =~/ $old /)) {
+                $prev=~s/$old /$var /g;
+                $expr=~s/$old /$var /g;
+                if (! exists $progs{"$prev $var $eq $expr$next"}) {
+                  $reuse="$prev $var $eq $expr$next";
+                  print "DBG: Use $var earlier instead of $old:$reuse.\n";
+                  last;
+                }
+              }
+            }
+          }
+        }
+      }
+      if ($i==1) {
+        print "Template renamed: $renamed; reuse: $reuse\n";
+      } elsif ($i==2) {
+        print "CSE renamed: $renamed; reuse: $reuse\n";
+        $tmp=$cse;
+      } else {
+        print "STR reduce renamed: $renamed; reuse: $reuse\n";
+      }
     }
 }
