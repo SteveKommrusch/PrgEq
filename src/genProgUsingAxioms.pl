@@ -233,7 +233,9 @@ sub GenProgUsingAxioms {
         $left = "( ".$1." ";
         $leftop = $1;
         my $leftdone=0;
+        my $loopcnt = 0;
         while ($in >0) {
+            $loopcnt++ > 100 && return "TOODEEP";
             if ($progA =~s/^(\s*)([^()\s]+)(\s*)//) {
                 $left .= $1.$2.$3;
                 if ($leftdone) {
@@ -303,7 +305,9 @@ sub GenProgUsingAxioms {
         $right = "( ".$1." ";
         $rightop = $1;
         my $leftdone=0;
+        my $loopcnt = 0;
         while ($in >0) {
+            $loopcnt++ > 100 && return "TOODEEP";
             if ($progA =~s/^(\s*)([^()\s]+)(\s*)//) {
                 $right .= $1.$2.$3;
                 if ($leftdone) {

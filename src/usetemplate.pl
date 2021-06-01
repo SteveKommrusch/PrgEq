@@ -1065,17 +1065,30 @@ while (<$templates>) {
     my $template=$_;
     chop($template);
     my $samples="";
+    my $template_renamed="";
+    my $cse_renamed="";
+    my $str_renamed="";
+    my $template_reuse="";
+    my $cse_reuse="";
+    my $str_reuse="";
+    my $template_axioms="";
+    my $str_axioms="";
     # Check for bad syntax
     $template=~s/~/-/g;
-    $template=~s/^/\+/g;
+    $template=~s/\^/\+/g;
     $template=~s/( [=\+\-\*\/,(]) \+/$1/g;
     next if $template=~/ [fu]\S+ [^(]/;
-    next if $template=~/ [=\*\-\+\/,;] [=,\);]/;
-    next if $template=~/ [ito]\S+ \(/;
+    next if $template=~/ [=\*\-\+\/,;] [=,\);\*\/]/;
+    next if $template=~/ [ito]\S+ [ito(]/;
     next if $template=~/ , \([^)]+\([^)]+\([^()]+\)[^(]+\)[^(]+\) [;(]/;
     next if $template=~/ , \([^)]+\([^()]+\)[^(]+\) [;(]/;
     next if $template=~/ , \([^()]+\) [;(]/;
     next if $template=~/ , [^()]+ ;/;
+    next if $template=~/ \( \) /;
+    next if $template=~/ = [^();,]*\(*[^();,]*\)[^();,]*\)/;
+    next if $template=~/ = [^();,]*\([^();,]*\([^();,]*\)*[^();,]*;/;
+
+    print "DBG: template line $.=$template.\n";
 
     # Process 'pow' functions
     while ($template=~/^(.*) pow \( (.*)$/) {
@@ -1105,6 +1118,17 @@ while (<$templates>) {
     while ($template=~s/; o(\d+) (=.*?; o\d+ =.*?; o\d+ =)/; p$1 $2 p$1 +/) {} 
 
     my $lcl=1;
+    # Attempt to prevent deep expression trees
+    while (($template=~/^(.* )(\S+ = [^;]*?\([^();]*\([^();]*\([^();]* [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
+        || ($template=~/^(.* )(\S+ = [^;]*? [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))([^();]*\)[^();]*\)[^();]*\).*)$/)
+        || ($template=~/^(.* )(\S+ = [^;]*?\([^();]*\([^();]*\([^();]*\([^();]* [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
+        || ($template=~/^(.* )(\S+ = [^;]*? [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\))([^();]*\)[^();]*\)[^();]*\)[^();]*\).*)$/)) {
+      $template="$1l$lcl = $3 ; $2l$lcl$4";
+      # Use new variable wherever possible in program
+      while ($template=~s/ l$lcl = ([^;]+) ; (.*[\(\+=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
+      $lcl++;
+    }
+    print "DBG: prevent depth:$template.\n";
     # Attempt Common Subexpression Removal
     my $cse=";".$template;
     # Use then delete simple variable assigns
@@ -1117,9 +1141,9 @@ while (<$templates>) {
         || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+\-\*=,] )\3( .*)/) 
         || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\([^()]*\( [^()]* \)[^()]*\) [^()\+\-\/;]*[\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/) 
         || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] [^()\+\-\*\/;f]*)( .*[\(\+\-\*=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\( [^()]* \) [^()\+\-\/;]*[\/\*] [^()\+\-\*\/;f,]*)( .*[\(\+\-\*=,] )\3( .*)/) 
         || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]* [\/\*] \( [^()]* \))( .*[\(\+\-\*=,] )\3( .*)/)
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]* [\/\*] [^()\+\-\*\/;f]*)( .*[\(\+\-\*=,] )\3( .*)/)
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]* [\/\*] [^()\+\-\*\/;f,]*)( .*[\(\+\-\*=,] )\3( .*)/)
         || ($cse=~/^(.*?)(;[^;]*?[\(\+\-\*\/=,] )(f\d+ \( [^()] \))( .*[\(\+\-\*\/=,] )\3( .*)/)) {
       $cse="$1; l$lcl = $3 $2l$lcl$4l$lcl$5";
       # Use new variable wherever possible in program
@@ -1130,18 +1154,15 @@ while (<$templates>) {
         || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+=,] )\3( .*)/) 
         || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/) 
         || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] [^()\+\-;f]*)( .*[\(\+=,] )\3( .*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] [^()\+\-;f]*[^()\+\-\*\/;f,])( .*[\(\+=,] )\3( .*)/) 
         || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/)
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] [^()\+\-;f]*)( .*[\(\+=,] )\3( .*)/)) {
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] [^()\+\-;f]*[^()\+\-\*\/;f,])( .*[\(\+=,] )\3( .*)/)) {
       $cse="$1; l$lcl = $3 $2l$lcl$4l$lcl$5";
       # Use new variable wherever possible in program
       while ($cse=~s/ l$lcl = ([^;]+) ; (.*[\(\+=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
       $lcl++;
     }
     $cse=~s/^;//;
-    if ($cse ne $template) {
-      print "DBG: template:$template, cse:$cse.\n";
-    }
 
     # Do strength reduction if possible
     my $str=";$cse";
@@ -1180,17 +1201,14 @@ while (<$templates>) {
       $lcl++;
     }
     $str=~s/^;//;
-    if ($cse ne $str) {
-      print "DBG: cse:$cse, str:$str.\n";
-    }
 
     # Rename variables
     @{$nonTerm{'Scalar_id'}} = shuffle(@{$nonTerm{'Scalar_id'}});
     @{$nonTerm{'Vector_id'}} = shuffle(@{$nonTerm{'Vector_id'}});
     my $renamed;
     my $scalarnum=0;
-    my $func1in=0;
-    my $func2in=0;
+    my $func1in=int(rand(5));
+    my $func2in=int(rand(5));
     my %mapping;
     my $lastout=0;
     my $tmp;
@@ -1203,6 +1221,7 @@ while (<$templates>) {
       } else {
         $tmp=$str;
       }
+      print "DBG: i=$i,tmp=$tmp.\n";
       while ($tmp=~/^(.*?) (f\d+) \( (.*)$/) {
         $tmp=$1;
         my $func_name=$2;
@@ -1222,7 +1241,27 @@ while (<$templates>) {
         }
         $tmp.=$args[2];
       }
-      print "DBG: i=$i, tmp=$tmp\n";
+      # Process 4s, 3s, and 2s, use same lcl numbers for all 3 cases
+      if ($tmp=~/^(.*?) (\S+ =[^;]* 4s .* 4s .*)$/) {
+        $tmp="$1 l$lcl = 2s + 2s ; $2";
+        $tmp =~ s/ 4s / l$lcl /g;
+      } else {
+        $tmp =~ s/ 4s / ( 2s + 2s ) /g;
+      }
+      if ($tmp=~/^(.*?) (\S+ =[^;]* 3s .* 3s .*)$/) {
+        my $lcl_plus_1 = $lcl+1;
+        $tmp="$1 l$lcl_plus_1 = 1s + 2s ; $2";
+        $tmp =~ s/ 3s / l$lcl_plus_1 /g;
+      } else {
+        $tmp =~ s/ 3s / ( 1s + 2s ) /g;
+      }
+      if ($tmp=~/^(.*?) (\S+ =[^;]* 2s .* 2s .*)$/) {
+        my $lcl_plus_2 = $lcl+2;
+        $tmp="$1 l$lcl_plus_2 = 1s + 1s ; $2";
+        $tmp =~ s/ 2s / l$lcl_plus_2 /g;
+      } else {
+        $tmp =~ s/ 2s / ( 1s + 1s ) /g;
+      }
       while ($tmp=~s/^ (\S+)//) {
         my $tok = $1;
         if (exists $mapping{$tok}) {
@@ -1233,7 +1272,7 @@ while (<$templates>) {
           if ($scalarnum < scalar @{$nonTerm{'Scalar_id'}}) {
             $mapping{$tok} = @{$nonTerm{'Scalar_id'}}[$scalarnum];
             $scalarnum++;
-          } elsif ($renamed=~s/ (\S+) = (\S+) ;//) {
+          } elsif ($i==1 && $renamed=~s/ (\S+) = (\S+) ;//) {
             my $old=$1;
             my $new=$2;
             $renamed=~s/$old /$new /;
@@ -1248,12 +1287,10 @@ while (<$templates>) {
         $lastout = ($tok=~/^o/);
       }
       if ($renamed =~/OVERFLOW/) {
-          print "Too many scalars, skipping\n";
-          $i=5;
-          next;
+        print "Too many scalars, skipping\n";
+        last;
       }
-      $renamed=~s/([\(=\+\-\*\/,]) \( (\S+) \)/$1 $2/;
-      print "DBG: renamed:$renamed\n";
+      $renamed=~s/([\(=\+\-\*\/,]) \( (\S+) \)/$1 $2/g;
       while ($renamed=~/^(.*[\(=\+\-\*\/]) - (.*)$/) {
         my $prev=$1;
         my $next=$2;
@@ -1273,7 +1310,8 @@ while (<$templates>) {
         }
         $tmp=~s/^(.*) ([fu]\d+s) \(.*$/$1/;
       }
-      print "DBG: renamed ns,func:$renamed\n";
+      print "DBG: ns,func:$renamed.\n";
+      $renamed=~s/\( (\S+) \)/$1/g;
       while ($renamed=~/^(.*) \/ (.*)$/) {
         my $prev=$1;
         my $next=$2;
@@ -1281,7 +1319,6 @@ while (<$templates>) {
         my @nextexp=NextExpr($next);
         $renamed="$prevexp[1] ( /s $prevexp[0] $nextexp[0] ) $nextexp[1]";
       }
-      print "DBG: renamed /:$renamed\n";
       while ($renamed=~/^(.*) \* (.*)$/) {
         my $prev=$1;
         my $next=$2;
@@ -1289,7 +1326,6 @@ while (<$templates>) {
         my @nextexp=NextExpr($next);
         $renamed="$prevexp[1] ( *s $prevexp[0] $nextexp[0] ) $nextexp[1]";
       }
-      print "DBG: renamed *:$renamed\n";
       while ($renamed=~/^(.*) \- (.*)$/) {
         my $prev=$1;
         my $next=$2;
@@ -1304,32 +1340,22 @@ while (<$templates>) {
         my @nextexp=NextExpr($next);
         $renamed="$prevexp[1] ( +s $prevexp[0] $nextexp[0] ) $nextexp[1]";
       }
-      print "DBG: renamed ops:$renamed\n";
-      $tmp = $renamed;
-      $renamed="";
-      while ($tmp=~s/^ (\S+)//) {
-        my $tok = $1;
-        if ($tok eq "(" && ($tmp=~s/^ \(/(/)) {
-          my @nextexp =NextExpr($tmp);
-          $renamed.=" $nextexp[0]";
-          $tmp=" $nextexp[1]";
-          $tmp=~s/^ \)// || die "Expected close paren in $renamed...$tmp";
-        } else {
-          $renamed.=" $tok";
+      while ($renamed=~/\( \(/) {
+        $tmp = $renamed;
+        $renamed="";
+        while ($tmp=~s/^ (\S+)//) {
+          my $tok = $1;
+          if ($tok eq "(" && ($tmp=~s/^ \(/(/)) {
+            my @nextexp =NextExpr($tmp);
+            $renamed.=" $nextexp[0]";
+            $tmp=" $nextexp[1]";
+            $tmp=~s/^ \)// || die "Expected close paren in $renamed...$tmp";
+          } else {
+            $renamed.=" $tok";
+          }
         }
       }
-      print "DBG: renamed redundant paren:$renamed\n";
-      # Attempt to prevent deep expression trees
-      while (($renamed=~/^(.* )(\S+ = [^;]*?\([^();]*\([^();]*\([^();]*\([^();]*)(\([^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
-          || ($renamed=~/^(.* )(\S+ = [^;]*?)(\([^();,]*\([^();,]*\)[^();,]*\))([^();]*\)[^();]*\)[^();]*\)[^();]*\).*)$/)
-          || ($renamed=~/^(.* )(\S+ = [^;]*?\([^();]*\([^();]*\([^();]*\([^();]*)(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
-          || ($renamed=~/^(.* )(\S+ = [^;]*?)(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))([^();]*\)[^();]*\)[^();]*\)[^();]*\).*)$/)) {
-        $renamed="$1l$lcl = $3 ; $2l$lcl$4";
-        # Use new variable wherever possible in program
-        while ($renamed=~s/ l$lcl = ([^;]+) ; (.*[\(\+=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
-        $lcl++;
-      }
-      print "DBG: limit paren:$renamed\n";
+      print "DBG: no double parens:$renamed.\n";
       my $reuse=$renamed;
       my %progs;
       while (! exists $progs{$reuse}) {
@@ -1346,31 +1372,26 @@ while (<$templates>) {
               $next=~s/$old /$var /g;
               if (! exists $progs{"$prev $var = $expr$next"}) {
                 $reuse="$prev $var = $expr$next";
-                print "DBG: Use $var later instead of $old:$reuse.\n";
                 last;
               }
             }
           }
           # Find first assignment of var and see if we can replace a prior var
           if ($reuse=~/^(.*?) $var (=+) ([^;]*)(.*)$/) {
-            print "DBG: Checking $var in $reuse.\n";
             my $prev=$1;
             my $eq=$2;
             my $expr=$3;
             my $next=$4;
             $tmp=$prev;
-            print "DBG: tmp=$tmp.\n";
             while ($tmp=~/^(.*) (\S+) =( .*)$/) {
               my $old=$2;
               my $remain=$3;
               $tmp=$1;
-              print "DBG: Checking $old(=>$var) =$remain.\n";
               if (! ($next=~/ $old /) && ! ($tmp =~/ $old /) && ! ($remain =~/ $old /)) {
                 $prev=~s/$old /$var /g;
                 $expr=~s/$old /$var /g;
                 if (! exists $progs{"$prev $var $eq $expr$next"}) {
                   $reuse="$prev $var $eq $expr$next";
-                  print "DBG: Use $var earlier instead of $old:$reuse.\n";
                   last;
                 }
               }
@@ -1378,13 +1399,135 @@ while (<$templates>) {
           }
         }
       }
+      $renamed=~s/^ *//;
+      $reuse=~s/^ *//;
+      $renamed.=" ";
+      $reuse.=" ";
       if ($i==1) {
-        print "Template renamed: $renamed; reuse: $reuse\n";
+        print "Template renamed: $renamed; reuse: $reuse.\n";
+        $template_renamed=$renamed;
+        $template_reuse=$reuse;
       } elsif ($i==2) {
-        print "CSE renamed: $renamed; reuse: $reuse\n";
-        $tmp=$cse;
+        print "CSE renamed: $renamed; reuse: $reuse.\n";
+        $cse_renamed=$renamed;
+        $cse_reuse=$reuse;
       } else {
-        print "STR reduce renamed: $renamed; reuse: $reuse\n";
+        print "STR reduce renamed: $renamed; reuse: $reuse.\n";
+        $str_renamed=$renamed;
+        $str_reuse=$reuse;
       }
+    }
+    next if ($renamed =~/OVERFLOW/);
+
+    my $progA = "";
+    my $progB = "";
+    my $progTmp = "";
+
+    next if (scalar split /[;() ]+/,$template_renamed) -1 > $maxTokens;
+    next if (scalar split /;/,$template_renamed) > 21;
+    next if (scalar split /;/,$template_renamed) < 3;
+    $progTmp=$template_renamed;
+    $progTmp=~s/[^()]//g;
+    while ($progTmp =~s/\)\(//g) {};
+    next if length($progTmp)/2 > 6;
+
+    next if (scalar split /[;() ]+/,$str_reuse) -1 > $maxTokens;
+    next if (scalar split /;/,$str_reuse) > 21;
+    $progTmp=$str_reuse;
+    $progTmp=~s/[^()]//g;
+    while ($progTmp =~s/\)\(//g) {};
+    next if length($progTmp)/2 > 6;
+
+    $transform="";
+    for (my $i=1; $i<3; $i++) {
+
+      if ($i==1) {
+        $progA = $template_renamed;
+      } else {
+        $progA = $str_reuse;
+      }
+
+      my $stmnum=1;
+      # 50% of the time, axioms end with intrastatement
+      if (rand() < 0.6) {
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            $progB .= "$1 $2 ";
+            $stmA = $3;
+            my $stmB = GenerateStmBfromStmA($stmA,$stmnum,"N");
+            $progB .= "$stmB ; ";
+            $stmnum+=1;
+        }
+      } else {
+        $progB=$progA;
+      }
+      $progTmp = InterAssignAxioms($progB, @{$nonTerm{'Scalar_id'}}[-1], @{$nonTerm{'Vector_id'}}[-1], @{$nonTerm{'Matrix_id'}}[-1]);
+      next if (scalar split /;/,$progTmp) > 21;
+      $progB="";
+      $stmnum=1;
+      if (rand() < 0.6) {
+        foreach my $stmA (split /;/,$progTmp) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            $progB .= "$1 $2 ";
+            $stmA = $3;
+            my $stmB = GenerateStmBfromStmA($stmA,$stmnum,"N");
+            $progB .= "$stmB ; ";
+            $stmnum+=1;
+        }
+      } else {
+        $progB=$progA;
+      }
+      if ($i==1) {
+        $template_axioms=$progB;
+      } else {
+        $str_axioms=$progB;
+      }
+    }
+    next if $transform=~/ N[lr][lr][lr][lr][lr]/;
+
+    next if (scalar split /[;() ]+/,$template_axioms) -1 > $maxTokens;
+    next if (scalar split /;/,$template_axioms) > 21;
+    $progTmp=$template_axioms;
+    $progTmp=~s/[^()]//g;
+    while ($progTmp =~s/\)\(//g) {};
+    next if length($progTmp)/2 > 6;
+
+    next if (scalar split /[;() ]+/,$str_axioms) -1 > $maxTokens;
+    next if (scalar split /;/,$str_axioms) > 21;
+    $progTmp=$str_axioms;
+    $progTmp=~s/[^()]//g;
+    while ($progTmp =~s/\)\(//g) {};
+    next if length($progTmp)/2 > 6;
+
+    # Output equivalent programs with greppable labels
+    if ($template_renamed ne $cse_renamed) {
+      print "X ${template_renamed}Y ${cse_renamed}Z Template Cse \n";
+    }
+    if ($cse_renamed ne $str_renamed) {
+      print "X ${cse_renamed}Y ${str_renamed}Z Cse Str \n";
+    }
+    if ($str_renamed ne $str_reuse) {
+      print "X ${str_renamed}Y ${str_reuse}Z Str Reuse \n";
+    }
+    if ($str_reuse ne $str_axioms) {
+      print "X ${str_reuse}Y ${str_axioms}Z Reuse Axioms \n";
+    }
+    if (($template_renamed ne $cse_renamed) &&
+        ($cse_renamed ne $str_renamed) &&
+        ($str_renamed ne $str_reuse)) {
+      print "X ${template_renamed}Y ${str_reuse}Z Template Cse Str Reuse \n";
+    }
+    if (($template_renamed ne $cse_renamed) &&
+        ($cse_renamed ne $str_renamed) &&
+        ($str_renamed ne $str_reuse) &&
+        ($str_reuse ne $str_axioms)) {
+      print "X ${template_renamed}Y ${str_axioms}Z Template Cse Str Reuse Axioms \n";
+    }
+    if ($str_reuse ne $template_renamed) {
+      print "X ${str_reuse}Y ${template_renamed}Z Reuse Str Cse Template \n";
+    }
+    if (($str_reuse ne $template_renamed) &&
+        ($template_renamed ne $template_axioms)) {
+      print "X ${str_reuse}Y ${template_axioms}Z Reuse Str Cse Template Axioms \n";
     }
 }
