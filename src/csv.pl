@@ -280,8 +280,8 @@ my @tgtvocab=(
 "stm19",
 "stm20");
 
-print "Create,A,B,A,B,Base,Tune,Num,Sclr,Vctr,Total,Max,Generated,Base,Tune",",ProgA"x scalar @srcvocab,",Gen'd"x scalar @tgtvocab,",Base"x scalar @tgtvocab,",Tune"x scalar @tgtvocab,"\n";
-print "Method,Tokens,Tokens,#Stm,#Stm,Pass,Pass,Inputs,Outs,Outs,Vars,Depth,Axioms,Axioms,Axioms,",join (",",@srcvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),"\n";
+print "Create,A,B,A,B,Base,Tune,Num,Sclr,Vctr,Total,Max,Generated,Base,Tune",",ProgA"x scalar @srcvocab,",Gen'd"x scalar @tgtvocab,",Base"x scalar @tgtvocab,",Tune"x scalar @tgtvocab,",ProgB"x scalar @srcvocab,",Compile,Compile,Compile,Compile,Compile,Compile\n";
+print "Method,Tokens,Tokens,#Stm,#Stm,Pass,Pass,Inputs,Outs,Outs,Vars,Depth,Axioms,Axioms,Axioms,",join (",",@srcvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@srcvocab),"CSE,StrRed,VarReuse,AddAx,Full,Reverse\n";
 
 my $method="AxiomGen";
 while (<$base>) {
@@ -311,13 +311,14 @@ while (<$base>) {
   }
 
   my @tokA=split /[;() ]+/,$progA;
+  my @tokB=split /[;() ]+/,$progB;
   my @tokGen=split / /,$tgt;
   my @tokBase=split / /,$baseproof;
   my @tokTune=split / /,$tuneproof;
 
   printf "%d,%d,%d,%d,",
-         (scalar @tokA),
-         (scalar split /[;() ]+/,$progB),
+         int(grep { /./ } @tokA),
+         int(grep { /./ } @tokB),
          int(grep { /=/ } split / /,$progA),
          int(grep { /=/ } split / /,$progB);
   printf "%d,%d,",$found,$tune_found;
@@ -368,6 +369,15 @@ while (<$base>) {
   foreach my $tok (@tgtvocab) {
     print ",",int(grep { /^\Q$tok\E$/ } @tokTune);
   }
+  foreach my $tok (@srcvocab) {
+    print ",",int(grep { /^\Q$tok\E$/ } @tokB);
+  }
+  print ",",($tgt=~/Template Cse/) ? 1 : 0;
+  print ",",($tgt=~/Cse Str/) ? 1 : 0;
+  print ",",($tgt=~/^ *Str Reuse *$/) ? 1 : 0;
+  print ",",($tgt=~/Axioms *$/) ? 1 : 0;
+  print ",",(($tgt=~/Reuse.*Template/) || ($tgt=~/Template.*Reuse/)) ? 1 : 0;
+  print ",",($tgt=~/Reuse.*Template/) ? 1 : 0;
   print "\n";
 }
 

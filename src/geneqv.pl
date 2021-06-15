@@ -1142,9 +1142,9 @@ while ($samples < $numSamples) {
             $progA = $stmA.$progA;
         }
     }
-    next if (scalar split /[;() ]+/,$progA) -1 > $maxTokens;
+    next if (scalar split /[;() ]+/," $progA ") -1 > $maxTokens;
     next if rand() < 0.5 && (scalar split /[;() ]+/,$progA) < int($maxTokens/2);
-    next if (scalar split /;/,$progA) > 21;
+    next if (scalar split /;/,"$progA ") > 21;
     my $progTmp;
     $progTmp=$progA;
     $progTmp=~s/[^()]//g;
@@ -1202,8 +1202,8 @@ while ($samples < $numSamples) {
         $progB = InterAssignAxioms($progB, @{$nonTerm{'Scalar_id'}}[-3], @{$nonTerm{'Vector_id'}}[-3], @{$nonTerm{'Matrix_id'}}[-3]);
     }
     next if $progB eq $progA;
-    next if (scalar split /[;() ]+/,$progB) -1 > $maxTokens;
-    next if (scalar split /;/,$progB) > 21;
+    next if (scalar split /[;() ]+/," $progB ") -1 > $maxTokens;
+    next if (scalar split /;/,"$progB ") > 21;
     $progTmp=$progB;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};

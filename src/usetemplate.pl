@@ -1511,15 +1511,15 @@ while (<$templates>) {
     my $progB = "";
     my $progTmp = "";
 
-    next if (scalar split /[;() ]+/,$template_renamed) -1 > $maxTokens;
-    next if (scalar split /;/,$template_renamed) > 21;
-    next if (scalar split /;/,$template_renamed) < 3;
+    next if (scalar split /[;() ]+/," $template_renamed ") -1 > $maxTokens;
+    next if (scalar split /;/,"$template_renamed ") > 21;
+    next if (scalar split /;/,"$template_renamed ") < 3;
     $progTmp=$template_renamed;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
     next if length($progTmp)/2 > 6;
 
-    next if (scalar split /[;() ]+/,$str_reuse) -1 > $maxTokens;
+    next if (scalar split /[;() ]+/," $str_reuse ") -1 > $maxTokens;
     next if (scalar split /;/,$str_reuse) > 21;
     $progTmp=$str_reuse;
     $progTmp=~s/[^()]//g;
@@ -1574,15 +1574,15 @@ while (<$templates>) {
     }
     next if $transform=~/ N[lr][lr][lr][lr][lr]/;
 
-    next if (scalar split /[;() ]+/,$template_axioms) -1 > $maxTokens;
-    next if (scalar split /;/,$template_axioms) > 21;
+    next if (scalar split /[;() ]+/," $template_axioms ") -1 > $maxTokens;
+    next if (scalar split /;/,"$template_axioms ") > 21;
     $progTmp=$template_axioms;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
     next if length($progTmp)/2 > 6;
 
-    next if (scalar split /[;() ]+/,$str_axioms) -1 > $maxTokens;
-    next if (scalar split /;/,$str_axioms) > 21;
+    next if (scalar split /[;() ]+/," $str_axioms ") -1 > $maxTokens;
+    next if (scalar split /;/,"$str_axioms ") > 21;
     $progTmp=$str_axioms;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
