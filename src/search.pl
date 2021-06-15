@@ -104,9 +104,9 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
         }
         # Syntax check before legality attempt
         if (($axiom =~ /^(Swapprev|Deletestm)$/ && $args eq "") ||
-          ($axiom =~ /^(Inline|Usevar)$/ && $args=~/^ [mvs]\d+\s*$/) ||
+          ($axiom =~ /^(Inline|Usevar|Rename)$/ && $args=~/^ [mvs]\d+\s*$/) ||
           ($axiom =~ /^(Newtmp)$/ && $args=~/^ N[lr]* [mvs]\d+\s*$/) ||
-          ($axiom =~ /^(Cancel|Noop|Double|Multzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)$/ && $args=~/^ N[lr]*\s*$/)) {
+          ($axiom =~ /^(Cancel|Noop|Double|Multzero|Multone|Divone|Addzero|Subzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)$/ && $args=~/^ N[lr]*\s*$/)) {
           my $predB = GenProgUsingAxioms($progA,"",$ln." ");
           $predB=~s/\s*$//;
           if ($predB ne $progA && !($predB=~/FAILTOMATCH/)) {

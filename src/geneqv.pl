@@ -277,20 +277,20 @@ sub InterAssignAxioms {
         my %expr;
         foreach my $stmA (split /;/,$progA) {
             $stmA =~ s/^\s*\S+ =+ //;
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) \( ([^()]+) \) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) \( ([^()]+) \) \)//) {
                 $expr{"$1 ( $2 ) ( $3 )"}+=6;
                 $expr{$2}+=3;
                 $expr{$3}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) ([^()]+) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) ([^()]+) \)//) {
                 $expr{"$1 ( $2 ) $3"}+=5;
                 $expr{$2}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) \)//) {
                 $expr{"$1 ( $2 )"}+=4;
                 $expr{$2}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \)//) {
                 $expr{$1}+=3;
             }
         }
@@ -302,10 +302,10 @@ sub InterAssignAxioms {
             foreach my $key (shuffle(keys %expr)) {
                 if (rand() < (1.0-6.0/$expr{$key})) {
                     my $var="";
-                    $key =~/^\S+s / && ($var=$tmpscalar);
-                    $key =~/^\S+v / && ($var=$tmpvector);
-                    $key =~/^\S+m / && ($var=$tmpmatrix);
-                    if (! ($stmA =~/= \( \Q$key\E \) *$/) && ($stmA =~ s/\( \Q$key\E \)/$var/g)) {
+                    $key =~/^\S+s/ && ($var=$tmpscalar);
+                    $key =~/^\S+v/ && ($var=$tmpvector);
+                    $key =~/^\S+m/ && ($var=$tmpmatrix);
+                    if ((!($stmA =~/= \( \Q$key\E \) *$/) || (rand() < 0.2)) && ($stmA =~ s/\( \Q$key\E \)/$var/g)) {
                         my $path = FindPath($stmA,$var);
                         %expr=();
                         $transform .= "stm$stmnum Newtmp N$path $var ";
@@ -318,7 +318,37 @@ sub InterAssignAxioms {
             $stmnum++;
         }
         $progA = $progB;
+    } elsif (rand() < 0.1 && $axioms =~/Rename/) {
+        # Possibly rename a variable
+        my $var="";
+        my $rename="";
+        $progB = "";
+        $stmnum=1;
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            my $lhs = $1;
+            my $eq = $2;
+	    my $rhs = $3;
+            if (!$rename && $eq eq "=" && rand() < 0.03 + ($stmnum*0.003)) {
+                $lhs =~/^s/ && ($var=$tmpscalar);
+                $lhs =~/^v/ && ($var=$tmpvector);
+                $lhs =~/^m/ && ($var=$tmpmatrix);
+                $transform .= "stm$stmnum Rename $var ";
+                $rename=$lhs;
+                $lhs = $var;
+            } elsif ($rename && $var) {
+                $rhs=~s/$rename/$var/g;
+                if ($lhs eq $rename) {
+                    # Stop replacement after variable seen again
+                    $var="";  
+                }
+            }
+            $progB .= "$lhs $eq $rhs ; ";
+            $stmnum++;
+        }
+        $progA = $progB;
     }
+    
 
     # Possibly replace statement with lexically equivalent variable
     if (rand() < 0.8 && !$DoInline && $axioms =~/Usevar/) {
@@ -359,6 +389,52 @@ sub GenerateStmBfromStmA {
     my $stmnum = $_[1];
     my $path = $_[2];
 
+    if (rand() < 0.0005 && $axioms =~/Multone/) {
+        $transform .= "stm$stmnum Multone ${path} ";
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $progA="( *s $progA 1s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            $progA="( *v $progA 1s )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            $progA="( *m $progA 1s )";
+        }
+    }
+    if (rand() < 0.001 && $axioms =~/Addzero/) {
+        $transform .= "stm$stmnum Addzero ${path} ";
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $progA="( +s $progA 0s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            $progA="( +v $progA 0v )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            $progA="( +m $progA 0m )";
+        }
+    }
+    if (rand() < 0.0005 && $axioms =~/Divone/) {
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $transform .= "stm$stmnum Divone ${path} ";
+            $progA="( /s $progA 1s )";
+        } 
+    }
+    if (rand() < 0.0005 && $axioms =~/Subzero/) {
+        $transform .= "stm$stmnum Subzero ${path} ";
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $progA="( -s $progA 0s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            $progA="( -v $progA 0v )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            $progA="( -m $progA 0m )";
+        }
+    }
+    if (rand() < 0.0005 && $axioms =~/Multone/) {
+        $transform .= "stm$stmnum Multone ${path} ";
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $progA="( *s $progA 1s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            $progA="( *v $progA 1s )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            $progA="( *m $progA 1s )";
+        }
+    }
     $progA =~s/^\( (\S+) // || return $progA;
     my $op = $1;
     my $leftop="";
@@ -575,7 +651,7 @@ sub GenerateStmBfromStmA {
         return "Im";
     }
 
-    if (rand() < 0.15 && (($op eq "+s" && ($left eq "0s" || $right eq "0s")) ||
+    if (rand() < 0.10 && (($op eq "+s" && ($left eq "0s" || $right eq "0s")) ||
                          ($op eq "-s" && $right eq "0s") ||
                          ($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
                          ($op =~ "/s" && $right eq "1s")) && $axioms =~/Noop/) {
@@ -587,7 +663,7 @@ sub GenerateStmBfromStmA {
         }
     }
 
-    if (rand() < 0.15 && (($op eq "+m" && ($left eq "0m" || $right eq "0m")) ||
+    if (rand() < 0.10 && (($op eq "+m" && ($left eq "0m" || $right eq "0m")) ||
                          ($op eq "-m" && $right eq "0m")) && $axioms =~/Noop/) {
         $transform .= "stm$stmnum Noop ${path} ";
         if ($left eq "0m") {
@@ -597,7 +673,7 @@ sub GenerateStmBfromStmA {
         }
     }
 
-    if (rand() < 0.15 && $op eq "*m" && (($left eq "Im" && ($rightop =~ /m$/ || $right =~ /^([0I]m|m\d+)/)) || ($right eq "Im" && ($leftop =~ /m$/ || $left =~ /^([0I]m|m\d+)/))) && $axioms =~/Noop/) {
+    if (rand() < 0.10 && $op eq "*m" && (($left eq "Im" && ($rightop =~ /m$/ || $right =~ /^([0I]m|m\d+)/)) || ($right eq "Im" && ($leftop =~ /m$/ || $left =~ /^([0I]m|m\d+)/))) && $axioms =~/Noop/) {
         $transform .= "stm$stmnum Noop ${path} ";
         if ($left eq "Im") {
             return GenerateStmBfromStmA($right,$stmnum,$path);
@@ -606,7 +682,7 @@ sub GenerateStmBfromStmA {
         }
     }
 
-    if (rand() < 0.15 && (($op eq "+v" && ($left eq "0v" || $right eq "0v")) ||
+    if (rand() < 0.10 && (($op eq "+v" && ($left eq "0v" || $right eq "0v")) ||
                          ($op eq "-v" && $right eq "0v")) && $axioms =~/Noop/) {
         $transform .= "stm$stmnum Noop ${path} ";
         if ($left eq "0v") {
@@ -936,7 +1012,7 @@ sub GenerateStmBfromStmA {
             ($op eq "*v" && !($leftop =~ /.s/ || $left =~ /^([01]s|s\d+)/ || $rightop =~ /.s/ || $right =~ /^([01]s|s\d+)/))) {
         $dont_commute = 1;
     }
-    if (rand() < 0.05 && !$dont_commute && $left ne $right && $axioms =~/Commute/) {
+    if (rand() < 0.03 && !$dont_commute && $left ne $right && $axioms =~/Commute/) {
         $transform .= "stm$stmnum Commute ${path} ";
         if ($rightFirst) {
             $newright = GenerateStmBfromStmA($left,$stmnum,$path."r");

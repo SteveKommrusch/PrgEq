@@ -13,7 +13,7 @@ if (! -f $ARGV[0]) {
   print "  Operators are typed as scalar, matrix, or vector, resulting in this list:\n";
   print "     +s -s *s /s is ns +m -m *m im nm tm +v -v *v nv\n";
   print " Example:\n";
-  print "  ./geneqv.pl straightline.txt VRepair_templates.txt\n";
+  print "  ../src/usetemplate.pl vsf2/straightline.txt VRepair_templates.txt\n";
   exit(1);
 }
 
@@ -260,20 +260,20 @@ sub InterAssignAxioms {
         my %expr;
         foreach my $stmA (split /;/,$progA) {
             $stmA =~ s/^\s*\S+ =+ //;
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) \( ([^()]+) \) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) \( ([^()]+) \) \)//) {
                 $expr{"$1 ( $2 ) ( $3 )"}+=6;
                 $expr{$2}+=3;
                 $expr{$3}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) ([^()]+) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) ([^()]+) \)//) {
                 $expr{"$1 ( $2 ) $3"}+=5;
                 $expr{$2}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) \)//) {
                 $expr{"$1 ( $2 )"}+=4;
                 $expr{$2}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \)//) {
                 $expr{$1}+=3;
             }
         }
@@ -285,10 +285,10 @@ sub InterAssignAxioms {
             foreach my $key (shuffle(keys %expr)) {
                 if (rand() < (1.0-6.0/$expr{$key})) {
                     my $var="";
-                    $key =~/^\S+s / && ($var=$tmpscalar);
-                    $key =~/^\S+v / && ($var=$tmpvector);
-                    $key =~/^\S+m / && ($var=$tmpmatrix);
-                    if (! ($stmA =~/= \( \Q$key\E \) *$/) && ($stmA =~ s/\( \Q$key\E \)/$var/g)) {
+                    $key =~/^\S+s/ && ($var=$tmpscalar);
+                    $key =~/^\S+v/ && ($var=$tmpvector);
+                    $key =~/^\S+m/ && ($var=$tmpmatrix);
+                    if ((!($stmA =~/= \( \Q$key\E \) *$/) || (rand() < 0.2)) && ($stmA =~ s/\( \Q$key\E \)/$var/g)) {
                         my $path = FindPath($stmA,$var);
                         %expr=();
                         $transform .= "stm$stmnum Newtmp N$path $var ";
@@ -298,6 +298,35 @@ sub InterAssignAxioms {
                 }
             }
             $progB .= $stmA."; ";
+            $stmnum++;
+        }
+        $progA = $progB;
+    } elsif (rand() < 0.1 && $axioms =~/Rename/) {
+        # Possibly rename a variable
+        my $var="";
+        my $rename="";
+        $progB = "";
+        $stmnum=1;
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            my $lhs = $1;
+            my $eq = $2;
+            my $rhs = $3;
+            if (!$rename && $eq eq "=" && rand() < 0.03 + ($stmnum*0.003)) {
+                $lhs =~/^s/ && ($var=$tmpscalar);
+                $lhs =~/^v/ && ($var=$tmpvector);
+                $lhs =~/^m/ && ($var=$tmpmatrix);
+                $transform .= "stm$stmnum Rename $var ";
+                $rename=$lhs;
+                $lhs = $var;
+            } elsif ($rename && $var) {
+                $rhs=~s/$rename/$var/g;
+                if ($lhs eq $rename) {
+                    # Stop replacement after variable seen again
+                    $var="";
+                }
+            }
+            $progB .= "$lhs $eq $rhs ; ";
             $stmnum++;
         }
         $progA = $progB;
@@ -342,6 +371,52 @@ sub GenerateStmBfromStmA {
     my $stmnum = $_[1];
     my $path = $_[2];
 
+    if (rand() < 0.0005 && $axioms =~/Multone/) {
+        $transform .= "stm$stmnum Multone ${path} ";
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $progA="( *s $progA 1s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            $progA="( *v $progA 1s )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            $progA="( *m $progA 1s )";
+        }
+    }
+    if (rand() < 0.001 && $axioms =~/Addzero/) {
+        $transform .= "stm$stmnum Addzero ${path} ";
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $progA="( +s $progA 0s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            $progA="( +v $progA 0v )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            $progA="( +m $progA 0m )";
+        }
+    }
+    if (rand() < 0.0005 && $axioms =~/Divone/) {
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $transform .= "stm$stmnum Divone ${path} ";
+            $progA="( /s $progA 1s )";
+        }
+    }
+    if (rand() < 0.0005 && $axioms =~/Subzero/) {
+        $transform .= "stm$stmnum Subzero ${path} ";
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $progA="( -s $progA 0s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            $progA="( -v $progA 0v )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            $progA="( -m $progA 0m )";
+        }
+    }
+    if (rand() < 0.0005 && $axioms =~/Multone/) {
+        $transform .= "stm$stmnum Multone ${path} ";
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            $progA="( *s $progA 1s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            $progA="( *v $progA 1s )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            $progA="( *m $progA 1s )";
+        }
+    }
     $progA =~s/^\( (\S+) // || return $progA;
     my $op = $1;
     my $leftop="";
@@ -558,7 +633,7 @@ sub GenerateStmBfromStmA {
         return "Im";
     }
 
-    if (rand() < 0.15 && (($op eq "+s" && ($left eq "0s" || $right eq "0s")) ||
+    if (rand() < 0.10 && (($op eq "+s" && ($left eq "0s" || $right eq "0s")) ||
                          ($op eq "-s" && $right eq "0s") ||
                          ($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
                          ($op =~ "/s" && $right eq "1s")) && $axioms =~/Noop/) {
@@ -570,7 +645,7 @@ sub GenerateStmBfromStmA {
         }
     }
 
-    if (rand() < 0.15 && (($op eq "+m" && ($left eq "0m" || $right eq "0m")) ||
+    if (rand() < 0.10 && (($op eq "+m" && ($left eq "0m" || $right eq "0m")) ||
                          ($op eq "-m" && $right eq "0m")) && $axioms =~/Noop/) {
         $transform .= "stm$stmnum Noop ${path} ";
         if ($left eq "0m") {
@@ -580,7 +655,7 @@ sub GenerateStmBfromStmA {
         }
     }
 
-    if (rand() < 0.15 && $op eq "*m" && (($left eq "Im" && ($rightop =~ /m$/ || $right =~ /^([0I]m|m\d+)/)) || ($right eq "Im" && ($leftop =~ /m$/ || $left =~ /^([0I]m|m\d+)/))) && $axioms =~/Noop/) {
+    if (rand() < 0.10 && $op eq "*m" && (($left eq "Im" && ($rightop =~ /m$/ || $right =~ /^([0I]m|m\d+)/)) || ($right eq "Im" && ($leftop =~ /m$/ || $left =~ /^([0I]m|m\d+)/))) && $axioms =~/Noop/) {
         $transform .= "stm$stmnum Noop ${path} ";
         if ($left eq "Im") {
             return GenerateStmBfromStmA($right,$stmnum,$path);
@@ -589,7 +664,7 @@ sub GenerateStmBfromStmA {
         }
     }
 
-    if (rand() < 0.15 && (($op eq "+v" && ($left eq "0v" || $right eq "0v")) ||
+    if (rand() < 0.10 && (($op eq "+v" && ($left eq "0v" || $right eq "0v")) ||
                          ($op eq "-v" && $right eq "0v")) && $axioms =~/Noop/) {
         $transform .= "stm$stmnum Noop ${path} ";
         if ($left eq "0v") {
@@ -919,7 +994,7 @@ sub GenerateStmBfromStmA {
             ($op eq "*v" && !($leftop =~ /.s/ || $left =~ /^([01]s|s\d+)/ || $rightop =~ /.s/ || $right =~ /^([01]s|s\d+)/))) {
         $dont_commute = 1;
     }
-    if (rand() < 0.05 && !$dont_commute && $left ne $right && $axioms =~/Commute/) {
+    if (rand() < 0.03 && !$dont_commute && $left ne $right && $axioms =~/Commute/) {
         $transform .= "stm$stmnum Commute ${path} ";
         if ($rightFirst) {
             $newright = GenerateStmBfromStmA($left,$stmnum,$path."r");
@@ -1061,7 +1136,7 @@ sub PrevExpr {
 
 open(my $templates,"<",$ARGV[1]);
 while (<$templates>) {
-    # Create 10 samples from each template
+    # Create multiple samples from each template
     my $template=$_;
     chop($template);
     my $samples="";
@@ -1075,8 +1150,10 @@ while (<$templates>) {
     my $str_axioms="";
     # Check for bad syntax
     $template=~s/~/-/g;
+    $template=~s/!/-/g;
     $template=~s/\^/\+/g;
     $template=~s/( [=\+\-\*\/,(]) \+/$1/g;
+    next if $template=~/ [\+\-][\+\-] /;
     next if $template=~/ [fu]\S+ [^(]/;
     next if $template=~/ [=\*\-\+\/,;] [=,\);\*\/]/;
     next if $template=~/ [ito]\S+ [ito(]/;
@@ -1087,8 +1164,9 @@ while (<$templates>) {
     next if $template=~/ \( \) /;
     next if $template=~/ = [^();,]*\(*[^();,]*\)[^();,]*\)/;
     next if $template=~/ = [^();,]*\([^();,]*\([^();,]*\)*[^();,]*;/;
+    next if ! ($template=~/o. = /);
 
-    print "DBG: template line $.=$template.\n";
+    print "DBG: TEMPLATE LINE $.=$template.\n";
 
     # Process 'pow' functions
     while ($template=~/^(.*) pow \( (.*)$/) {
@@ -1269,13 +1347,13 @@ while (<$templates>) {
         } elsif ($tok=~/=/ && $lastout) {
           $renamed .= " ===";
         } elsif ($tok=~/[iotlp]\d+/) {
-          if ($scalarnum < scalar @{$nonTerm{'Scalar_id'}}) {
+          if ($scalarnum+1 < scalar @{$nonTerm{'Scalar_id'}}) {
             $mapping{$tok} = @{$nonTerm{'Scalar_id'}}[$scalarnum];
             $scalarnum++;
           } elsif ($i==1 && $renamed=~s/ (\S+) = (\S+) ;//) {
             my $old=$1;
             my $new=$2;
-            $renamed=~s/$old /$new /;
+            $renamed=~s/$old /$new /g;
             $mapping{$tok} = $old;
           } else {
             $mapping{$tok} = "OVERFLOW";
@@ -1363,16 +1441,23 @@ while (<$templates>) {
         for (my $j = 0; $j < $scalarnum; $j++) {
           my $var= @{$nonTerm{'Scalar_id'}}[$j];
           # Find last use of var and see if we can reuse it
-          if ($reuse=~/^(.*) (\S+) = ([^;]* $var [^;]*;)(.*)$/) {
+          if ($reuse=~/^(.*) (\S+) = ([^;]*$var [^;]*;)(.*)$/) {
             my $prev=$1;
             my $old=$2;
             my $expr=$3;
             my $next=$4;
-            if (! ($next=~/$var /)) {
+            if (!($next=~/$var /) && !($next=~/$old ===/)) {
               $next=~s/$old /$var /g;
-              if (! exists $progs{"$prev $var = $expr$next"}) {
-                $reuse="$prev $var = $expr$next";
-                last;
+              if ($expr eq "$var ;") {
+                if (! exists $progs{"$prev$next"}) {
+                  $reuse="$prev$next";
+                  last;
+                }
+              } else {
+                if (! exists $progs{"$prev $var = $expr$next"}) {
+                  $reuse="$prev $var = $expr$next";
+                  last;
+                }
               }
             }
           }
@@ -1383,16 +1468,19 @@ while (<$templates>) {
             my $expr=$3;
             my $next=$4;
             $tmp=$prev;
-            while ($tmp=~/^(.*) (\S+) =( .*)$/) {
-              my $old=$2;
-              my $remain=$3;
-              $tmp=$1;
-              if (! ($next=~/ $old /) && ! ($tmp =~/ $old /) && ! ($remain =~/ $old /)) {
-                $prev=~s/$old /$var /g;
-                $expr=~s/$old /$var /g;
-                if (! exists $progs{"$prev $var $eq $expr$next"}) {
-                  $reuse="$prev $var $eq $expr$next";
-                  last;
+            # Check that var is not a reused input
+            if (!($expr=~/$var /) && !($prev=~/$var /)) {
+              while ($tmp=~/^(.*) (\S+) =( .*)$/) {
+                my $old=$2;
+                my $remain=$3;
+                $tmp=$1;
+                if (!($next=~/$old /) && !($tmp =~/$old /) && !($remain =~/$old /) && !($prev=~/$old ===/)) {
+                  $prev=~s/$old /$var /g;
+                  $expr=~s/$old /$var /g;
+                  if (! exists $progs{"$prev $var $eq $expr$next"}) {
+                    $reuse="$prev $var $eq $expr$next";
+                    last;
+                  }
                 }
               }
             }
@@ -1446,15 +1534,16 @@ while (<$templates>) {
       } else {
         $progA = $str_reuse;
       }
-
+      my $progB = "";
       my $stmnum=1;
-      # 50% of the time, axioms end with intrastatement
+      # 60% of the time, axioms start with intrastatement
       if (rand() < 0.6) {
         foreach my $stmA (split /;/,$progA) {
             $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
             $progB .= "$1 $2 ";
-            $stmA = $3;
-            my $stmB = GenerateStmBfromStmA($stmA,$stmnum,"N");
+            my $stmB = $3;
+            $stmB = GenerateStmBfromStmA($stmB,$stmnum,"N");
+            die "Unexpected ; in $stmB" if $stmB=~/;/;
             $progB .= "$stmB ; ";
             $stmnum+=1;
         }
@@ -1469,13 +1558,13 @@ while (<$templates>) {
         foreach my $stmA (split /;/,$progTmp) {
             $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
             $progB .= "$1 $2 ";
-            $stmA = $3;
-            my $stmB = GenerateStmBfromStmA($stmA,$stmnum,"N");
+            my $stmB = $3;
+            $stmB = GenerateStmBfromStmA($stmB,$stmnum,"N");
             $progB .= "$stmB ; ";
             $stmnum+=1;
         }
       } else {
-        $progB=$progA;
+        $progB=$progTmp;
       }
       if ($i==1) {
         $template_axioms=$progB;
@@ -1513,13 +1602,11 @@ while (<$templates>) {
       print "X ${str_reuse}Y ${str_axioms}Z Reuse Axioms \n";
     }
     if (($template_renamed ne $cse_renamed) &&
-        ($cse_renamed ne $str_renamed) &&
-        ($str_renamed ne $str_reuse)) {
+        ($cse_renamed ne $str_renamed)) {
       print "X ${template_renamed}Y ${str_reuse}Z Template Cse Str Reuse \n";
     }
     if (($template_renamed ne $cse_renamed) &&
         ($cse_renamed ne $str_renamed) &&
-        ($str_renamed ne $str_reuse) &&
         ($str_reuse ne $str_axioms)) {
       print "X ${template_renamed}Y ${str_axioms}Z Template Cse Str Reuse Axioms \n";
     }

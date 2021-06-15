@@ -80,7 +80,7 @@ sub GenProgUsingAxioms {
         $progB = "";
         while ($progA =~ s/^([^;]+); //) {
             my $stmA = $1;
-            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || die "Illegal statement in dead code check: $stmA\n"; 
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || return "<PROGBFAILTOMATCH>";
             my $lhs = $1;
             my $eq = $2;
             my $rhs = $3;
@@ -105,8 +105,8 @@ sub GenProgUsingAxioms {
             $stmA = $1;
             if ($stmnum == $xstm) {
                 $stmA =~ /^[^=]*=+ +(\S.*\S)$/;
-                my $remain = $1;
-                $xpath =~ s/^N// || die "Illegal Node path: $xpath";
+                my $remain = "$1 ";
+                $xpath =~ s/^N// || return "<PROGBFAILTOMATCH>";
                 while ($xpath =~ s/^(\S)//) {
                     if ($1 eq "l") {
                         # Skip operator
@@ -154,10 +154,44 @@ sub GenProgUsingAxioms {
                 if (! ($expr=~/^\( \S+[msv] .* \) $/) && ! ($expr=~/^\d*[msv]\d* $/)) {
                     return "<PROGBFAILTOMATCH>";
                 }
-                ($stmA =~ s/\Q$expr\E/$xvar /g);
-                $progB .= "$xvar = $expr; "; 
+                $expr=~s/ +$//;
+                $stmA =~ s/\Q$expr\E/$xvar/g;
+                $progB .= "$xvar = $expr ; "; 
             }
             $progB .= $stmA." ; ";
+            $stmnum++;
+        }
+        return $progB;
+    }
+
+    # Possibly rename a variable
+    if ($transform =~ /^stm(\d+) Rename (\S+)/) {
+        my $xstm=$1;
+        my $xvar=$2;
+        my %vars;
+        $progB = "";
+        my $rename="";
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            my $lhs = $1;
+            my $eq = $2;
+	    my $rhs = $3;
+            if ($xstm == $stmnum && $eq eq "=" &&
+                  ($xvar=~/^s/ && $lhs=~/^s/ ||
+                   $xvar=~/^v/ && $lhs=~/^v/ ||
+                   $xvar=~/^m/ && $lhs=~/^m/)) {
+                $rename=$lhs;
+                $lhs = $xvar;
+            } elsif ($rename && $xvar) {
+                # Return if rename did not obey liveness rules
+                $rhs=~/$xvar/ && return $progA;
+                $rhs=~s/$rename/$xvar/g;
+                if ($lhs eq $rename || $lhs eq $xvar) {
+                    # Stop rename after variable defined again
+                    $xvar="";
+                }
+            }
+            $progB .= "$lhs $eq $rhs ; ";
             $stmnum++;
         }
         return $progB;
@@ -215,6 +249,39 @@ sub GenProgUsingAxioms {
     }
 
     # Process expression axioms
+    if ($transform =~s/^Multone ${path} *$//) {
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            return "( *s $progA 1s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            return "( *v $progA 1s )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            return "( *m $progA 1s )";
+        }
+    }
+    if ($transform =~s/^Addzero ${path} *$//) {
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            return "( +s $progA 0s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            return "( +v $progA 0v )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            return "( +m $progA 0m )";
+        }
+    }
+    if ($transform =~s/^Divone ${path} *$//) {
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            return "( /s $progA 1s )";
+        }
+    }
+    if ($transform =~s/^Subzero ${path} *$//) {
+        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+            return "( -s $progA 0s )";
+        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
+            return "( -v $progA 0v )";
+        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
+            return "( -m $progA 0m )";
+        }
+    }
+
     $progA =~s/^\( (\S+) // || return $progA;
     my $op = $1;
     my $leftop="";

@@ -65,9 +65,9 @@ for (my $i = 0; $i < $lines; $i++) {
       my $axiom=$2;
       my $args=$3;
       if (($axiom =~ /^(Swapprev|Deletestm)$/ && $args eq "") ||
-          ($axiom =~ /^(Inline|Usevar)$/ && $args=~/^ [mvs]\d+\s*$/) ||
+          ($axiom =~ /^(Inline|Usevar|Rename)$/ && $args=~/^ [mvs]\d+\s*$/) ||
           ($axiom =~ /^(Newtmp)$/ && $args=~/^ N[lr]* [mvs]\d+\s*$/) ||
-          ($axiom =~ /^(Cancel|Noop|Double|Multzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)$/ && $args=~/^ N[lr]*\s*$/)) {
+          ($axiom =~ /^(Cancel|Noop|Double|Multzero|Multone|Divone|Addzero|Subzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)$/ && $args=~/^ N[lr]*\s*$/)) {
         $syntax++;
         $verbose && print "syntax ";
         my $progB = GenProgUsingAxioms($src[$i],"",$xlate[$j]." ");

@@ -37,7 +37,7 @@ while (<$src>) {
         my $Z=$1;
         $samples .= "X ${progIntermediate}Y ${progB}Z $Z\n";
         my $progAxiom=GenProgUsingAxioms($progIntermediate,"",$Z." ");
-        if ($progIntermediate eq $progAxiom) {
+        if (!$progAxiom || $progIntermediate eq $progAxiom) {
             die "Axiom not applied: X ${progA}Y ${progB}Z $origZ died at $Z on $progIntermediate\n";
         }
         if (exists $inter{$progAxiom} || $progAxiom =~/TOODEEP/ || (scalar split /[;() ]+/,$progAxiom) + $numtokB >= $maxPairTokens) {

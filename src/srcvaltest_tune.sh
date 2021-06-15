@@ -1,11 +1,11 @@
 #!/bin/bash
 
-if [ ! -f $1 ]; then
-    echo "Usage: srcvaltest.sh all_name.txt"
+f=all_straight.txt
+if [ ! -f $f ]; then
+    echo "Usage: srcvaltest_tune.sh "
     echo "       Creates src-*, val-*, and tgt-* files for OpenNMT use."
     exit 0
 fi
-f=$1
 
 # Train and validate include training for all axiom steps
 perl -ne '/Y (.*) Z/; $this=$1; if ((!$last || $last ne $this)) { $n++; if ($n % 100 == 5) {$p=1} else {$p=0}}; $p && print; $last=$this' $f | shuf > all_trainval.txt
@@ -27,7 +27,9 @@ perl -e 'open($all,"<","all_test.txt"); while (<$all>) { /X (.* Y .*) Z (.*)$/ |
 
 for i in 1 2 3 4 5 6; do head -n ${i}0000 all_test_fullaxioms.txt | tail -n 10000 > tune_b${i}_fullaxioms.txt; done
 
-grep "^X .* Y .* Z " raw_template.txt | shuf | head -n 40000 > template_fullaxioms.txt
+perl -ne 'if (!/(Cancel|Multzero|Double)/) {/X (.*) Y (.*) Z/; print "X $2 Y $1 Z Reversed \n"}' tune_b[123456]_fullaxioms.txt | shuf | head -n 10000 > tune_reversed.txt
+
+grep "^X .*===.* Y .*===.* Z " raw_template.txt | grep " = " | shuf | head -n 40000 > template_fullaxioms.txt
 
 head -n 10000 template_fullaxioms.txt | tail -n 10000 > tune_b7_fullaxioms.txt
 head -n 20000 template_fullaxioms.txt | tail -n 10000 > tune_b8_fullaxioms.txt
