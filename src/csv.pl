@@ -17,20 +17,12 @@ open(my $base, "-|","grep -h \"^F[OA][UI][NL]\" search25_10.txt template25_10.tx
 open(my $tune, "-|","grep -h \"^F[OA][UI][NL]\" $ARGV[0]/search25_10.txt $ARGV[0]/template25_10.txt") || die "open tune files failed: $!";
 
 my @srcvocab=(
-"(",
-")",
 "+s",
 "-s",
 "*s",
 "/s",
 "is",
 "ns",
-"+m",
-"-m",
-"*m",
-"tm",
-"im",
-"nm",
 "+v",
 "-v",
 "*v",
@@ -166,7 +158,6 @@ my @tgtvocab=(
 "Assocright",
 "Flipleft",
 "Flipright",
-"Transpose",
 "Newtmp",
 "Deletestm",
 "Swapprev",
@@ -289,11 +280,15 @@ my @tgtvocab=(
 "stm19",
 "stm20");
 
-print "TokA,TokB,StmA,StmB,BP,TP,Inp,SOut,Vout,Vars,Dpth,GenAx,BaseAx,TuneAx,",join (",",@srcvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),"\n";
+print "Create,A,B,A,B,Base,Tune,Num,Sclr,Vctr,Total,Max,Generated,Base,Tune",",ProgA"x scalar @srcvocab,",Gen'd"x scalar @tgtvocab,",Base"x scalar @tgtvocab,",Tune"x scalar @tgtvocab,"\n";
+print "Method,Tokens,Tokens,#Stm,#Stm,Pass,Pass,Inputs,Outs,Outs,Vars,Depth,Axioms,Axioms,Axioms,",join (",",@srcvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),"\n";
 
+my $method="AxiomGen";
 while (<$base>) {
   my $tune_ln=<$tune> || die "tune files ended early";
   /^(F\w+): (.*; )to (.*; )(bestguess|with) +(\S.*)Target path: (.*)$/ || die "bad syntax in base line: $_";
+  print "$method,";
+  ($.==1000) && ($method="Template");
   my $found=$1;
   my $progA=$2;
   my $progB=$3;
