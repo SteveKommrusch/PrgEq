@@ -281,7 +281,7 @@ my @tgtvocab=(
 "stm20");
 
 print "Create,A,B,A,B,Base,Tune,Num,Sclr,Vctr,Total,Max,Generated,Base,Tune",",ProgA"x scalar @srcvocab,",Gen'd"x scalar @tgtvocab,",Base"x scalar @tgtvocab,",Tune"x scalar @tgtvocab,",ProgB"x scalar @srcvocab,",Compile,Compile,Compile,Compile,Compile,Compile\n";
-print "Method,Tokens,Tokens,#Stm,#Stm,Pass,Pass,Inputs,Outs,Outs,Vars,Depth,Axioms,Axioms,Axioms,",join (",",@srcvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@srcvocab),"CSE,StrRed,VarReuse,AddAx,Full,Reverse\n";
+print "Method,Tokens,Tokens,#Stm,#Stm,Pass,Pass,Inputs,Outs,Outs,Vars,Depth,Axioms,Axioms,Axioms,",join (",",@srcvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@tgtvocab),",",join (",",@srcvocab),",CSE,StrRed,VarReuse,AddAx,Full,Reverse\n";
 
 my $method="AxiomGen";
 while (<$base>) {
