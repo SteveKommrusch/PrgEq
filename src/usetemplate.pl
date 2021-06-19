@@ -1610,6 +1610,9 @@ while (<$templates>) {
         ($str_reuse ne $str_axioms)) {
       print "X ${template_renamed}Y ${str_axioms}Z Template Cse Str Reuse Axioms \n";
     }
+    if ($template_renamed ne $str_renamed)) {
+      print "X ${str_renamed}Y ${template_renamed}Z Str Cse Template \n";
+    }
     if ($str_reuse ne $template_renamed) {
       print "X ${str_reuse}Y ${template_renamed}Z Reuse Str Cse Template \n";
     }

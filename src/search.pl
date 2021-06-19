@@ -17,6 +17,8 @@ if ( ! -f $model ) {
   print "Error: $model must be a model file\n";
   exit(1);
 }
+my $host=`hostname`;
+$host=~s/\n$//;
 
 my $maxAxioms=$ARGV[0];
 my $beam=$ARGV[1];
@@ -37,8 +39,14 @@ my @axioms;
 my @rare;
 my %searching;
 my @nsrc;
+my @axcnt;
+my @syntax;
+my @legal;
+my @new;
 my $progA;
 my $progB;
+my $foundall=0;
+my $newall=0;
 my $legal=0;
 my $illegal=0;
 my $badsyntax=0;
@@ -52,6 +60,10 @@ while (<$fh_all>) {
   $tgt[$lnum]=$3;
   $progAs[$lnum][1][1]=$progA; # Dims are sample,axiom,beam
   $nsrc[$lnum]=1;              # Current number of active beam
+  $axcnt[$lnum]=0;
+  $syntax[$lnum]=0;
+  $legal[$lnum]=0;
+  $new[$lnum]=0;
   $progBs[$lnum]=$progB;
   $axioms[$lnum][1][1]="";
   $axpath[$lnum]="";           # No proven path yet
@@ -61,7 +73,7 @@ while (<$fh_all>) {
 close($fh_all) || die "close fh_all failed: $!";
 
 for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
-  open(my $fh_raw,">","$dir/search_raw$axsteps.txt") || die "open fh_raw failed: $!";
+  open(my $fh_raw,">","$dir/search_raw_$host.txt") || die "open fh_raw failed: $!";
   for (my $i=1; $i <= $lnum; $i++) {
     for (my $j=1; $j <= $nsrc[$i]; $j++) {
       $progA = $progAs[$i][$axsteps][$j];
@@ -69,12 +81,12 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
     }
   }
   close($fh_raw) || die "close fh_raw failed: $!";
-  # system "../../src/pre2graph.pl < search_raw$axsteps.txt > search_all$axsteps.txt\n";
-  # system "perl -ne '/^(.*) X / && print \$1.\"\\n\"' search_all$axsteps.txt > search_src-test$axsteps.txt";
-  system "perl -ne '/X (.*) Z / && print \$1.\"\\n\"' $dir/search_raw$axsteps.txt > $dir/search_src-test$axsteps.txt";
-  system "onmt_translate -model $model -src $dir/search_src-test$axsteps.txt -output $dir/search_pred$axsteps.txt -gpu 0 -replace_unk -beam_size 5 -n_best 5 -batch_size 4 -verbose > $dir/search_translate$axsteps.out 2>&1";
+  # system "../../src/pre2graph.pl < search_raw_$host.txt > search_all_$host.txt\n";
+  # system "perl -ne '/^(.*) X / && print \$1.\"\\n\"' search_all_$host.txt > search_src-test_$host.txt";
+  system "perl -ne '/X (.*) Z / && print \$1.\"\\n\"' $dir/search_raw_$host.txt > $dir/search_src-test_$host.txt";
+  system "onmt_translate -model $model -src $dir/search_src-test_$host.txt -output $dir/search_pred_$host.txt -gpu 0 -replace_unk -beam_size 5 -n_best 5 -batch_size 4 -verbose > /dev/null 2>&1";
   
-  open(my $fh_pred,"<","$dir/search_pred$axsteps.txt") || die "open fh_pred failed: $!";
+  open(my $fh_pred,"<","$dir/search_pred_$host.txt") || die "open fh_pred failed: $!";
   for (my $i=1; $i <= $lnum; $i++) {
     my $new_nsrc=0;
     my @preds;
@@ -92,6 +104,7 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
     for (my $k=1; $k <= 5; $k++) {
       # For beam above 2, check up to 5 proposals from neural net
       for (my $j=1; $j <= $nsrc[$i] && $new_nsrc < ($beam > 2 ? 5*$beam : $beam) && !$found; $j++) {
+        $axcnt[$i]++;
         $progA=$progAs[$i][$axsteps][$j];
         my $ln = $preds[$j][$k];
         my $stm="";
@@ -107,9 +120,11 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
           ($axiom =~ /^(Inline|Usevar|Rename)$/ && $args=~/^ [mvs]\d+\s*$/) ||
           ($axiom =~ /^(Newtmp)$/ && $args=~/^ N[lr]* [mvs]\d+\s*$/) ||
           ($axiom =~ /^(Cancel|Noop|Double|Multzero|Multone|Divone|Addzero|Subzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose)$/ && $args=~/^ N[lr]*\s*$/)) {
+          $syntax[$i]++;
           my $predB = GenProgUsingAxioms($progA,"",$ln." ");
           $predB=~s/\s*$//;
-          if ($predB ne $progA && !($predB=~/FAILTOMATCH/)) {
+          if (!($predB=~/FAILTOMATCH/)) {
+            $legal[$i]++;
             $legal++;
             my $progTmp=$predB;
             $progTmp=~s/[^()]//g;
@@ -118,6 +133,8 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
             # And fewer than 21 statements and depth less than 7
             if (!$searching{$i.$predB} && !($predB=~/TOODEEP/) && ($numtokB + (scalar split /[;() ]+/,$predB) < $maxTokens) && int(grep { /=/ } split / /,$predB) < 21 && length($progTmp)/2 < 7) {
               $new_nsrc++;
+              $newall++;
+              $new[$i]++;
               $axioms[$i][$axsteps+1][$new_nsrc] = $axioms[$i][$axsteps][$j]." $ln";
               if ($new_nsrc <= $beam) {
                 $searching{$i.$predB}=1;
@@ -139,6 +156,7 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
                 # Found path!
                 $axpath[$i] = $axioms[$i][$axsteps+1][$new_nsrc];
                 $found=1;
+                $foundall++;
                 $new_nsrc = 0;   # No need to keep searching
               }
             }
@@ -154,21 +172,23 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
   }
   <$fh_pred> && die "Too many lines in fh_pred";
   close($fh_pred) || die "close fh_pred failed: $!";
+  print "Axiom step $axsteps done. Found $foundall proofs. Legal axiom proposals: $legal; New programs: $newall Bad syntax: $badsyntax; Illegal axiom proposals: $illegal\n";
+  select()->flush();
 }
 
 for (my $i=1; $i <= $lnum; $i++) {
   if ($axpath[$i]) {
-    print "FOUND: $progAs[$i][1][1] to $progBs[$i] with $axpath[$i] Target path: $tgt[$i]\n";
+    print "FOUND: $progAs[$i][1][1] to $progBs[$i] with $axpath[$i] Target path: $tgt[$i]Axioms Evaluated: $axcnt[$i], syntax: $syntax[$i], legal: $legal[$i], new: $new[$i]\n";
   } else {
     for (my $j=1; $j <= $maxAxioms + 1; $j++) {
         if (! exists $axioms[$i][$j+1][1]) {
             if ($rare[$i]) {
               print "RARE: $rare[$i]\n";
             }
-            print "FAIL: $progAs[$i][1][1] to $progBs[$i] bestguess after $j steps: $axioms[$i][$j][1] Target path: $tgt[$i]\n";
+            print "FAIL: $progAs[$i][1][1] to $progBs[$i] bestguess after $j steps: $axioms[$i][$j][1] Target path: $tgt[$i]Axioms Evaluated: $axcnt[$i], syntax: $syntax[$i], legal: $legal[$i], new: $new[$i]\n";
             last;
         }
     }
   }
 }
-print "Legal axiom proposals: $legal; Bad syntax: $badsyntax; Illegal axiom proposals: $illegal\n";
+print "Legal axiom proposals: $legal; New programs: $newall Bad syntax: $badsyntax; Illegal axiom proposals: $illegal\n";

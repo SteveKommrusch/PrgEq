@@ -286,7 +286,7 @@ print "Method,Tokens,Tokens,#Stm,#Stm,Pass,Pass,Inputs,Outs,Outs,Vars,Depth,Axio
 my $method="AxiomGen";
 while (<$base>) {
   my $tune_ln=<$tune> || die "tune files ended early";
-  /^(F\w+): (.*; )to (.*; )(bestguess|with) +(\S.*)Target path: (.*)$/ || die "bad syntax in base line: $_";
+  /^(F\w+): (.*; )to (.*; )(bestguess|with) +(\S.*)Target path: (.*)Axioms evaluated:/ || die "bad syntax in base line: $_";
   print "$method,";
   ($.==1000) && ($method="Template");
   my $found=$1;
@@ -294,7 +294,7 @@ while (<$base>) {
   my $progB=$3;
   my $baseproof=$5;
   my $tgt=$6;
-  $tune_ln=~/^(F.*): \Q${progA}to ${progB}\E(bestguess|with) +(\S.*)Target path: $tgt$/ || die "bad syntax in tuned line: $tune_ln Base line: $_";
+  $tune_ln=~/^(F.*): \Q${progA}to ${progB}\E(bestguess|with) +(\S.*)Target path: ${tgt}Axioms evaluated/ || die "bad syntax in tuned line: $tune_ln Base line: $_";
   my $tune_found=$1;
   my $tuneproof=$3;
   if ($found=~/FOUND/) {
