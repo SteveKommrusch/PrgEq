@@ -1,0 +1,215 @@
+# This grammar is a superset of the grammar defined for straight-line programs
+# in the paper: https://www.researchgate.net/publication/220431899_Probabilistic_Algorithms_for_Deciding_Equivalence_of_Straight-Line_Programs
+# The syntax of the grammar is an extention of the one presented for straight-line
+# programs in: http://ccom.uprrp.edu/~humberto/pages/teaching/compilers2017/expressions.html
+$maxTokens = 100
+$numSamples = 1000
+$axioms = "(Cancel|Noop|Double|Multzero|Multone|Divone|Addzero|Subzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose|Swapprev|Inline|Deletestm|Newtmp|Usevar|Rename)";
+# Only some outputs are considered for equivalence; 
+#  dead code is prevented (all temporaries get used in at least 1 output)
+$output_matrixes = 0
+$output_scalars  = rnd(0,2) 
+$output_vectors  = rnd(0,2) 
+$min_out = 1
+$max_out = 2
+# Statement count is selected first
+#  The number of statements will be uniformly chosen with the 
+#  low value being the number of live outputs. The high value
+#  will be 20 (a simple binary function statement is 5 tokens)
+#  The '===' token denotes assignments to required live outputs
+Stm -> Stm ; Stm                 
+    -> Scalar_id = Scalar_Exp ;                 
+    -> Vector_id = Vector_Exp ;                 
+    -> Matrix_id = Matrix_Exp ;                 
+    -> Scalar_id === Scalar_Exp ;                 
+    -> Vector_id === Vector_Exp ;                 
+    -> Matrix_id === Matrix_Exp ;                 
+# The probability multipliers "p*n"
+# allow for biasing the random program generation
+Scalar_Exp -> Scalar_Exp_NoZero       p*172
+           -> 0s                      p*2
+# This language does not use matrices, so below we detail
+# only the scalar and vector terminals.
+# Terminals in the language have these meanings:
+#     ( : Any operator is preceeded by an open paren
+#     ) : Close parens occur after the operands are listed
+#    s##: These tokens are scalar variables
+#    v##: These tokens are vector variables
+#    0s: Scalar 0 value
+#    1s: Scalar 0 value
+#    0v: 0 vector
+# -These functions produce scalar outputs:
+#    f#s: These functions receive 2 scalar inputs
+#    g#s: These functions receive 1 scalar and 1 vector input
+#    h#s: These functions receive 2 vector inputs
+#    u#s: These functions receive 1 scalar input
+#    v#s: These functions receive 1 vector input
+# -These functions produce vector outputs:
+#    f#v: These functions receive 2 scalar inputs
+#    g#v: These functions receive 1 scalar and 1 vector input
+#    h#v: These functions receive 2 vector inputs
+#    u#v: These functions receive 1 scalar input
+#    v#v: These functions receive 1 vector input
+# -Two-input operators that produce scalars:
+#    +s: 2-operand addition
+#    -s: 2-operand subtraction
+#    *s: 2-operand multiplication
+#    /s: 2-operand division
+# -One-input operators that produce scalars:
+#    ns: 1-operand negation (i.e. ( ns a ) = -a
+#    /s: 1-operand inverse (i.e. ( /s a ) = 1/a
+# -Two-input operators that produce vectors:
+#    +v: 2-operand addition
+#    -v: 2-operand subtraction
+#    *v: 2-operand multiplication (one operand vector, other scalar)
+# -One-input operators that produce vectors:
+#    nv: 1-operand negation (i.e. ( ns a ) = -a
+Scalar_Exp_NoZero -> Scalar_id                              p*20
+                  -> 1s                                     p*2
+                  -> ( f1s Scalar_Exp Scalar_Exp )           
+                  -> ( f2s Scalar_Exp Scalar_Exp )           
+                  -> ( f3s Scalar_Exp Scalar_Exp )           
+                  -> ( f4s Scalar_Exp Scalar_Exp )           
+                  -> ( f5s Scalar_Exp Scalar_Exp )           
+                  -> ( g1s Scalar_Exp Vector_Exp )           
+                  -> ( g2s Scalar_Exp Vector_Exp )           
+                  -> ( g3s Scalar_Exp Vector_Exp )           
+                  -> ( g4s Scalar_Exp Vector_Exp )           
+                  -> ( g5s Scalar_Exp Vector_Exp )           
+                  -> ( h1s Vector_Exp Vector_Exp )           
+                  -> ( h2s Vector_Exp Vector_Exp )           
+                  -> ( h3s Vector_Exp Vector_Exp )           
+                  -> ( h4s Vector_Exp Vector_Exp )           
+                  -> ( h5s Vector_Exp Vector_Exp )           
+                  -> ( u1s Scalar_Exp )            
+                  -> ( u2s Scalar_Exp )            
+                  -> ( u3s Scalar_Exp )            
+                  -> ( u4s Scalar_Exp )            
+                  -> ( u5s Scalar_Exp )            
+                  -> ( v1s Vector_Exp )            
+                  -> ( v2s Vector_Exp )            
+                  -> ( v3s Vector_Exp )            
+                  -> ( v4s Vector_Exp )            
+                  -> ( v5s Vector_Exp )            
+                  -> ( +s Scalar_Exp Scalar_Exp )           p*25
+                  -> ( -s Scalar_Exp Scalar_Exp )           p*25
+                  -> ( *s Scalar_Exp Scalar_Exp )           p*25
+                  -> ( /s Scalar_Exp Scalar_Exp_NoZero )    p*25
+                  -> ( Scalar_Unary Scalar_Exp )            p*25
+Scalar_Unary -> is 
+             -> ns
+Scalar_id -> s01
+          -> s02
+          -> s03
+          -> s04
+          -> s05
+          -> s06
+          -> s07
+          -> s08
+          -> s09
+          -> s10
+          -> s11
+          -> s12
+          -> s13
+          -> s14
+          -> s15
+          -> s16
+          -> s17
+          -> s18
+          -> s19
+          -> s20
+          -> s21
+          -> s22
+          -> s23
+          -> s24
+          -> s25
+          -> s26
+          -> s27
+          -> s28
+          -> s29
+          -> s30
+Vector_Exp -> Vector_id                      p*15
+           -> 0v                             p*2
+           -> ( f1v Scalar_Exp Scalar_Exp )           
+           -> ( f2v Scalar_Exp Scalar_Exp )           
+           -> ( f3v Scalar_Exp Scalar_Exp )           
+           -> ( f4v Scalar_Exp Scalar_Exp )           
+           -> ( f5v Scalar_Exp Scalar_Exp )           
+           -> ( g1v Scalar_Exp Vector_Exp )           
+           -> ( g2v Scalar_Exp Vector_Exp )           
+           -> ( g3v Scalar_Exp Vector_Exp )           
+           -> ( g4v Scalar_Exp Vector_Exp )           
+           -> ( g5v Scalar_Exp Vector_Exp )           
+           -> ( h1v Vector_Exp Vector_Exp )           
+           -> ( h2v Vector_Exp Vector_Exp )           
+           -> ( h3v Vector_Exp Vector_Exp )           
+           -> ( h4v Vector_Exp Vector_Exp )           
+           -> ( h5v Vector_Exp Vector_Exp )           
+           -> ( u1v Scalar_Exp )            
+           -> ( u2v Scalar_Exp )            
+           -> ( u3v Scalar_Exp )            
+           -> ( u4v Scalar_Exp )            
+           -> ( u5v Scalar_Exp )            
+           -> ( v1v Vector_Exp )            
+           -> ( v2v Vector_Exp )            
+           -> ( v3v Vector_Exp )            
+           -> ( v4v Vector_Exp )            
+           -> ( v5v Vector_Exp )            
+           -> ( +v Vector_Exp Vector_Exp )   p*25
+           -> ( -v Vector_Exp Vector_Exp )   p*25
+           -> ( *v Vector_Exp Scalar_Exp )   p*20
+           -> ( *v Scalar_Exp Vector_Exp )   p*20
+           -> ( nv Vector_Exp )              p*15
+Vector_id -> v01
+          -> v02
+          -> v03
+          -> v04
+          -> v05
+          -> v06
+          -> v07
+          -> v08
+          -> v09
+          -> v10
+          -> v11
+          -> v12
+          -> v13
+          -> v14
+          -> v15
+          -> v16
+          -> v17
+          -> v18
+          -> v19
+          -> v20
+          -> v21
+          -> v22
+          -> v23
+          -> v24
+          -> v25
+          -> v26
+          -> v27
+          -> v28
+          -> v29
+          -> v30
+Matrix_Exp -> Matrix_id                               p*4
+           -> 0m
+           -> Im
+           -> ( Matrix_Binop Matrix_Exp Matrix_Exp )  p*5
+           -> ( *m Matrix_Exp Scalar_Exp )            p*3
+           -> ( *m Scalar_Exp Matrix_Exp )            p*3
+           -> ( Matrix_Unary Matrix_Exp )             p*2
+Matrix_Binop -> +m
+             -> -m
+             -> *m
+Matrix_Unary -> im
+             -> tm
+             -> nm
+Matrix_id -> m01
+          -> m02
+          -> m03
+          -> m04
+          -> m05
+          -> m06
+          -> m07
+          -> m08
+          -> m09
+          -> m10
