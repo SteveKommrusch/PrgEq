@@ -495,10 +495,17 @@ sub GenProgUsingAxioms {
     }
 
     if ((($op eq "+s" && ($left eq "0s" || $right eq "0s")) ||
-         ($op eq "-s" && $right eq "0s") ||
-         ($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
+         ($op eq "-s" && $right eq "0s")) && $transform =~s/^Noop $path *$//) {
+        if ($left eq "0s") {
+            return GenProgUsingAxioms($right,$path,$transform);
+        } else {
+            return GenProgUsingAxioms($left,$path,$transform);
+        }
+    }
+
+    if ((($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
          ($op eq "/s" && $right eq "1s")) && $transform =~s/^Noop $path *$//) {
-        if ($left eq "0s" || $left eq "1s") {
+        if ($left eq "1s") {
             return GenProgUsingAxioms($right,$path,$transform);
         } else {
             return GenProgUsingAxioms($left,$path,$transform);

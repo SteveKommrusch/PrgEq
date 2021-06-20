@@ -634,11 +634,19 @@ sub GenerateStmBfromStmA {
     }
 
     if (rand() < 0.10 && (($op eq "+s" && ($left eq "0s" || $right eq "0s")) ||
-                         ($op eq "-s" && $right eq "0s") ||
-                         ($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
+                         ($op eq "-s" && $right eq "0s")) && $axioms =~/Noop/) {
+        $transform .= "stm$stmnum Noop ${path} ";
+        if ($left eq "0s") {
+            return GenerateStmBfromStmA($right,$stmnum,$path);
+        } else {
+            return GenerateStmBfromStmA($left,$stmnum,$path);
+        }
+    }
+
+    if (rand() < 0.10 && (($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
                          ($op =~ "/s" && $right eq "1s")) && $axioms =~/Noop/) {
         $transform .= "stm$stmnum Noop ${path} ";
-        if ($left eq "0s" || $left eq "1s") {
+        if ($left eq "1s") {
             return GenerateStmBfromStmA($right,$stmnum,$path);
         } else {
             return GenerateStmBfromStmA($left,$stmnum,$path);
@@ -1193,14 +1201,14 @@ while (<$templates>) {
     }
     ($template=~/ = [^;] o\d/) && die "Output used in other variable";
     # Collapse down to 2 outputs
-    while ($template=~s/; o(\d+) (=.*?; o\d+ =.*?; o\d+ =)/; p$1 $2 p$1 +/) {} 
+    while ($template=~s/ o(\d+) (=.*?; o\d+ =.*?; o\d+ =)/ p$1 $2 p$1 +/) {} 
 
     my $lcl=1;
     # Attempt to prevent deep expression trees
-    while (($template=~/^(.* )(\S+ = [^;]*?\([^();]*\([^();]*\([^();]* [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
-        || ($template=~/^(.* )(\S+ = [^;]*? [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))([^();]*\)[^();]*\)[^();]*\).*)$/)
-        || ($template=~/^(.* )(\S+ = [^;]*?\([^();]*\([^();]*\([^();]*\([^();]* [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
-        || ($template=~/^(.* )(\S+ = [^;]*? [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\))([^();]*\)[^();]*\)[^();]*\)[^();]*\).*)$/)) {
+    while (($template=~/^(.* )(\S+ = [^;]*?\([^;]*\([^;]*\([^;]* [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
+        || ($template=~/^(.* )(\S+ = [^;]*? [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\([^();,]*\)[^();,]*\))([^;]*\)[^;]*\)[^;]*\).*)$/)
+        || ($template=~/^(.* )(\S+ = [^;]*?\([^;]*\([^;]*\([^;]* [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\))(.*)$/) 
+        || ($template=~/^(.* )(\S+ = [^;]*? [^fu ]+ )(\([^();,]*\([^();,]*\)[^();,]*\))([^;]*\)[^;]*\)[^;]*\).*)$/)) {
       $template="$1l$lcl = $3 ; $2l$lcl$4";
       # Use new variable wherever possible in program
       while ($template=~s/ l$lcl = ([^;]+) ; (.*[\(\+=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
@@ -1517,14 +1525,14 @@ while (<$templates>) {
     $progTmp=$template_renamed;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
-    next if length($progTmp)/2 > 6;
+    next if length($progTmp)/2 > 5;
 
     next if (scalar split /[;() ]+/," $str_reuse ") -1 > $maxTokens;
     next if (scalar split /;/,$str_reuse) > 21;
     $progTmp=$str_reuse;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
-    next if length($progTmp)/2 > 6;
+    next if length($progTmp)/2 > 5;
 
     $transform="";
     for (my $i=1; $i<3; $i++) {
@@ -1579,14 +1587,14 @@ while (<$templates>) {
     $progTmp=$template_axioms;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
-    next if length($progTmp)/2 > 6;
+    next if length($progTmp)/2 > 5;
 
     next if (scalar split /[;() ]+/," $str_axioms ") -1 > $maxTokens;
     next if (scalar split /;/,"$str_axioms ") > 21;
     $progTmp=$str_axioms;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
-    next if length($progTmp)/2 > 6;
+    next if length($progTmp)/2 > 5;
 
     # Output equivalent programs with greppable labels
     if ($template_renamed ne $cse_renamed) {
@@ -1610,7 +1618,7 @@ while (<$templates>) {
         ($str_reuse ne $str_axioms)) {
       print "X ${template_renamed}Y ${str_axioms}Z Template Cse Str Reuse Axioms \n";
     }
-    if ($template_renamed ne $str_renamed)) {
+    if ($template_renamed ne $str_renamed) {
       print "X ${str_renamed}Y ${template_renamed}Z Str Cse Template \n";
     }
     if ($str_reuse ne $template_renamed) {

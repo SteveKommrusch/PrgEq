@@ -73,6 +73,7 @@ while (<$fh_all>) {
 close($fh_all) || die "close fh_all failed: $!";
 
 for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
+  print "Starting step $axsteps at ",`date`;
   open(my $fh_raw,">","$dir/search_raw_$host.txt") || die "open fh_raw failed: $!";
   for (my $i=1; $i <= $lnum; $i++) {
     for (my $j=1; $j <= $nsrc[$i]; $j++) {
@@ -123,7 +124,7 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
           $syntax[$i]++;
           my $predB = GenProgUsingAxioms($progA,"",$ln." ");
           $predB=~s/\s*$//;
-          if (!($predB=~/FAILTOMATCH/)) {
+          if (($predB ne $progA) && !($predB=~/FAILTOMATCH/)) {
             $legal[$i]++;
             $legal++;
             my $progTmp=$predB;
@@ -131,7 +132,7 @@ for (my $axsteps=1; $axsteps <= $maxAxioms; $axsteps++) {
             while ($progTmp =~s/\)\(//g) {};
             # Only add new programs which fit in maxToken (network size)
             # And fewer than 21 statements and depth less than 7
-            if (!$searching{$i.$predB} && !($predB=~/TOODEEP/) && ($numtokB + (scalar split /[;() ]+/,$predB) < $maxTokens) && int(grep { /=/ } split / /,$predB) < 21 && length($progTmp)/2 < 7) {
+            if (!$searching{$i.$predB} && !($predB=~/TOODEEP/) && ($numtokB + (scalar split /[;() ]+/,$predB) < $maxTokens) && int(grep { /=/ } split / /,$predB) < 21 && length($progTmp)/2 < 6) {
               $new_nsrc++;
               $newall++;
               $new[$i]++;
@@ -191,4 +192,4 @@ for (my $i=1; $i <= $lnum; $i++) {
     }
   }
 }
-print "Legal axiom proposals: $legal; New programs: $newall Bad syntax: $badsyntax; Illegal axiom proposals: $illegal\n";
+print "Search done. Found $foundall proofs. Legal axiom proposals: $legal; New programs: $newall Bad syntax: $badsyntax; Illegal axiom proposals: $illegal. ",`date`;

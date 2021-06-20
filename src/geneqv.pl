@@ -652,11 +652,19 @@ sub GenerateStmBfromStmA {
     }
 
     if (rand() < 0.10 && (($op eq "+s" && ($left eq "0s" || $right eq "0s")) ||
-                         ($op eq "-s" && $right eq "0s") ||
-                         ($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
+                         ($op eq "-s" && $right eq "0s")) && $axioms =~/Noop/) {
+        $transform .= "stm$stmnum Noop ${path} ";
+        if ($left eq "0s") {
+            return GenerateStmBfromStmA($right,$stmnum,$path);
+        } else {
+            return GenerateStmBfromStmA($left,$stmnum,$path);
+        }
+    }
+
+    if (rand() < 0.10 && (($op =~ /\*./ && ($left eq "1s" || $right eq "1s")) ||
                          ($op =~ "/s" && $right eq "1s")) && $axioms =~/Noop/) {
         $transform .= "stm$stmnum Noop ${path} ";
-        if ($left eq "0s" || $left eq "1s") {
+        if ($left eq "1s") {
             return GenerateStmBfromStmA($right,$stmnum,$path);
         } else {
             return GenerateStmBfromStmA($left,$stmnum,$path);
@@ -1149,7 +1157,7 @@ while ($samples < $numSamples) {
     $progTmp=$progA;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
-    next if length($progTmp)/2 > 6;
+    next if length($progTmp)/2 > 5;
     next if (rand() > ((length($progTmp)*2)**2 + (scalar split /; */,$progA)**2) / 400.0);
     next if exists $progs{$progA};
     $progs{$progA} = 1;
@@ -1207,7 +1215,7 @@ while ($samples < $numSamples) {
     $progTmp=$progB;
     $progTmp=~s/[^()]//g;
     while ($progTmp =~s/\)\(//g) {};
-    next if length($progTmp)/2 > 6;
+    next if length($progTmp)/2 > 5;
     $_=$transform;
     next if / N[lr][lr][lr][lr][lr]/;
     next if rand() < 0.75 && ! / (Newtmp|Usevar) / 

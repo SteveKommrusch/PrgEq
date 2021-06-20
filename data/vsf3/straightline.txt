@@ -3,7 +3,45 @@
 # The syntax of the grammar is an extention of the one presented for straight-line
 # programs in: http://ccom.uprrp.edu/~humberto/pages/teaching/compilers2017/expressions.html
 $maxTokens = 100
-$numSamples = 1000
+$numSamples = 150000
+# The axioms (rewrite rules) used on expressions are given below.
+# - All expression rewrite rules use the syntax "stm# rule NodeID"
+#   where stm# is the statement number, rule is the rewrite rule name, and
+#   NodeID specifies the specific node in the expression of that statement.
+# - Cancel: (-s a a) => 0; (/s a a) => 1, (*m A (im A)) => I, etc
+# - Noop: (+m A O) => A; (*m A I) => A, etc
+# - Double: (ns (ns a)) => a; (im (im A)) => A, etc
+# - Multzero: (*m A 0) => O; (*s 0 b) => 0, etc
+# - Commute: (+v v w) => (+v w v), etc
+# - Distribleft: (*s (+s a b) c) => (+s (*s a c) (*s b c)), etc
+# - Distribright: (*m A (+m B C) => (+m (*m A B) (*m A C)), etc
+# - Factorleft: (+s (*s a b) (*s a c) => (*s a (+s b c)), etc
+# - Factorright: (+s (*s a c) (*s b c) => (*s (+s a b) c), etc
+# - Assocleft: (*s a (*s b c)) => (*s (*s a b) c)), etc
+# - Assocright: (*s (*s a b) c)) => (*s a (*s b c)), etc
+# - Flipleft: (nv (-v v w)) => (-v w v)), (is (/s a b)) => (/s b a), etc
+# - Flipright: (/s a (/s b c)) => (*s a (/s c b)),
+#              (-m A (nm B)) => (+m A B), (+v v w) => (-v v (nv w)),etc
+# - Transpose: (*m A B) => (tm (*m (tm B) (tm A)); (+m A B) => (tm (+m (tm B) (tm A))
+#              (tm (*m A B)) => (*m (tm B) (tm A)), etc
+# - Multone: v => (*v v 1s); b => (*s b 1s), etc
+# - Divone:  v => b => (/s b 1s), etc
+# - Addzero: v => (+v v 0v); b => (+s b 0s), etc
+# - Subzero: v => (-v v 0v); b => (-s b 0s), etc
+# The axioms (rewrite rules) used on statements are given below.
+# - Statement rewrite rules have varying syntax, given before each example.
+# - Swapprev: stm# Swapprev
+# - Swapprev: "a = (+s b c); d = (-s e f)" => "d = (-s e f); a = (+s b c)", etc
+# - Inline: stm# Inline VarID, where VarID identifies the variable to inline.
+# - Inline: "a = (+s b c); d = (-s a f)" => "a = (+s b c); d = (-s (+s b c) f)", etc
+# - Deletestm: stm# Deletestm
+# - Deletestm: "a = (+s b c); d = (-s e f)" => "a = (+s b c)", etc
+# - Newtmp: stm# Newtmp NodeID VarID, where VarID is assigned the given expression.
+# - Newtmp: "d = (-s (+s b c) f)" => "a = (+s b c); d = (-s a f)", etc
+# - Usevar: stm# Usevar VarID, where VarID is used in the statement.
+# - Usevar: "a = (+s b c); d = (-s (+s b c) f)" => "a = (+s b c); d = (-s a f)", etc
+# - Rename: stm# Rename VarID, renames assigned variable to VarID up to any reassign
+# - Rename: "a = (+s b c); d = (-s a f)" => "g = (+s b c); d = (-s g f)", etc
 $axioms = "(Cancel|Noop|Double|Multzero|Multone|Divone|Addzero|Subzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose|Swapprev|Inline|Deletestm|Newtmp|Usevar|Rename)";
 # Only some outputs are considered for equivalence; 
 #  dead code is prevented (all temporaries get used in at least 1 output)
