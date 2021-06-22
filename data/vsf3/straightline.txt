@@ -2,6 +2,9 @@
 # in the paper: https://www.researchgate.net/publication/220431899_Probabilistic_Algorithms_for_Deciding_Equivalence_of_Straight-Line_Programs
 # The syntax of the grammar is an extention of the one presented for straight-line
 # programs in: http://ccom.uprrp.edu/~humberto/pages/teaching/compilers2017/expressions.html
+# maxTokens sets the upper limit per program of the number of AST nodes
+# allowed. In the grammar defined in this file, all tokens except for 
+# '(', ')', and ';' are counted as tokens.
 $maxTokens = 100
 $numSamples = 150000
 # The axioms (rewrite rules) used on expressions are given below.
@@ -24,24 +27,24 @@ $numSamples = 150000
 #              (-m A (nm B)) => (+m A B), (+v v w) => (-v v (nv w)),etc
 # - Transpose: (*m A B) => (tm (*m (tm B) (tm A)); (+m A B) => (tm (+m (tm B) (tm A))
 #              (tm (*m A B)) => (*m (tm B) (tm A)), etc
-# - Multone: v => (*v v 1s); b => (*s b 1s), etc
-# - Divone:  v => b => (/s b 1s), etc
-# - Addzero: v => (+v v 0v); b => (+s b 0s), etc
+# - Multone: v => (*v 1s v); b => (*s 1s b), etc
+# - Divone:  b => (/s b 1s), etc
+# - Addzero: v => (+v 0v v); b => (+s 0s b), etc
 # - Subzero: v => (-v v 0v); b => (-s b 0s), etc
 # The axioms (rewrite rules) used on statements are given below.
 # - Statement rewrite rules have varying syntax, given before each example.
 # - Swapprev: stm# Swapprev
-# - Swapprev: "a = (+s b c); d = (-s e f)" => "d = (-s e f); a = (+s b c)", etc
+#       "a = (+s b c); d = (-s e f)" => "d = (-s e f); a = (+s b c)", etc
 # - Inline: stm# Inline VarID, where VarID identifies the variable to inline.
-# - Inline: "a = (+s b c); d = (-s a f)" => "a = (+s b c); d = (-s (+s b c) f)", etc
+#       "a = (+s b c); d = (-s a f)" => "a = (+s b c); d = (-s (+s b c) f)", etc
 # - Deletestm: stm# Deletestm
-# - Deletestm: "a = (+s b c); d = (-s e f)" => "a = (+s b c)", etc
+#       "a = (+s b c); d = (-s e f)" => "a = (+s b c)", etc
 # - Newtmp: stm# Newtmp NodeID VarID, where VarID is assigned the given expression.
-# - Newtmp: "d = (-s (+s b c) f)" => "a = (+s b c); d = (-s a f)", etc
+#       "d = (-s (+s b c) f)" => "a = (+s b c); d = (-s a f)", etc
 # - Usevar: stm# Usevar VarID, where VarID is used in the statement.
-# - Usevar: "a = (+s b c); d = (-s (+s b c) f)" => "a = (+s b c); d = (-s a f)", etc
+#       "a = (+s b c); d = (-s (+s b c) f)" => "a = (+s b c); d = (-s a f)", etc
 # - Rename: stm# Rename VarID, renames assigned variable to VarID up to any reassign
-# - Rename: "a = (+s b c); d = (-s a f)" => "g = (+s b c); d = (-s g f)", etc
+#       "a = (+s b c); d = (-s a f)" => "g = (+s b c); d = (-s g f)", etc
 $axioms = "(Cancel|Noop|Double|Multzero|Multone|Divone|Addzero|Subzero|Commute|Distribleft|Distribright|Factorleft|Factorright|Assocleft|Assocright|Flipleft|Flipright|Transpose|Swapprev|Inline|Deletestm|Newtmp|Usevar|Rename)";
 # Only some outputs are considered for equivalence; 
 #  dead code is prevented (all temporaries get used in at least 1 output)
@@ -50,10 +53,13 @@ $output_scalars  = rnd(0,2)
 $output_vectors  = rnd(0,2) 
 $min_out = 1
 $max_out = 2
-# Statement count is selected first
-#  The number of statements will be uniformly chosen with the 
-#  low value being the number of live outputs. The high value
-#  will be 20 (a simple binary function statement is 5 tokens)
+# Full programs are randomly built by first selecting the outputs, 
+# randomly creating expressions for them by probabilistically expanding
+# production rules defined below, and then randomly creating
+# expressions for some of the variables used by the growing program.
+# Variables used but with no assign are hence inputs to the program.
+# The maximum number of statements will be 20 (a simple binary 
+# function statement is 5 tokens). The maximum expression depth is 6.
 #  The '===' token denotes assignments to required live outputs
 Stm -> Stm ; Stm                 
     -> Scalar_id = Scalar_Exp ;                 
@@ -74,7 +80,7 @@ Scalar_Exp -> Scalar_Exp_NoZero       p*172
 #    s##: These tokens are scalar variables
 #    v##: These tokens are vector variables
 #    0s: Scalar 0 value
-#    1s: Scalar 0 value
+#    1s: Scalar 1 value
 #    0v: 0 vector
 # -These functions produce scalar outputs:
 #    f#s: These functions receive 2 scalar inputs
@@ -100,7 +106,7 @@ Scalar_Exp -> Scalar_Exp_NoZero       p*172
 #    +v: 2-operand addition
 #    -v: 2-operand subtraction
 #    *v: 2-operand multiplication (one operand vector, other scalar)
-# -One-input operators that produce vectors:
+# -One-input operator that produces vector:
 #    nv: 1-operand negation (i.e. ( ns a ) = -a
 Scalar_Exp_NoZero -> Scalar_id                              p*20
                   -> 1s                                     p*2

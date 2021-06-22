@@ -371,24 +371,24 @@ sub GenerateStmBfromStmA {
     my $stmnum = $_[1];
     my $path = $_[2];
 
-    if (rand() < 0.0005 && $axioms =~/Multone/) {
+    if (rand() < 0.0015 && $axioms =~/Multone/) {
         $transform .= "stm$stmnum Multone ${path} ";
         if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
-            $progA="( *s $progA 1s )";
+            $progA="( *s 1s $progA )";
         } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
-            $progA="( *v $progA 1s )";
+            $progA="( *v 1s $progA )";
         } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
-            $progA="( *m $progA 1s )";
+            $progA="( *m 1s $progA )";
         }
     }
     if (rand() < 0.001 && $axioms =~/Addzero/) {
         $transform .= "stm$stmnum Addzero ${path} ";
         if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
-            $progA="( +s $progA 0s )";
+            $progA="( +s 0s $progA )";
         } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
-            $progA="( +v $progA 0v )";
+            $progA="( +v 0v $progA )";
         } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
-            $progA="( +m $progA 0m )";
+            $progA="( +m 0m $progA )";
         }
     }
     if (rand() < 0.0005 && $axioms =~/Divone/) {
@@ -405,16 +405,6 @@ sub GenerateStmBfromStmA {
             $progA="( -v $progA 0v )";
         } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
             $progA="( -m $progA 0m )";
-        }
-    }
-    if (rand() < 0.0005 && $axioms =~/Multone/) {
-        $transform .= "stm$stmnum Multone ${path} ";
-        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
-            $progA="( *s $progA 1s )";
-        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
-            $progA="( *v $progA 1s )";
-        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
-            $progA="( *m $progA 1s )";
         }
     }
     $progA =~s/^\( (\S+) // || return $progA;
@@ -891,21 +881,47 @@ sub GenerateStmBfromStmA {
         return "( $leftop $newleft $newright )";
     }
 
-    if (rand() < 0.25 && (($op eq "-s" && $rightop =~/[\-n]s/) ||
-                         ($op eq "/s" && $rightop =~/[\/i]s/) ||
-                         ($op eq "-m" && $rightop =~/[\-n]m/) ||
-                         ($op eq "-v" && $rightop =~/[\-n]v/)) && $axioms =~/Flipright/) {
+    if (rand() < 0.25 && (($op eq "-s") ||
+                         ($op eq "/s") ||
+                         ($op eq "-m") ||
+                         ($op eq "-v")) && ($rightop eq $op) && $axioms =~/Flipright/) {
         $transform .= "stm$stmnum Flipright ${path} ";
         $newop = $op;
-        $newop =~s/\-/\+/;
-        $newop =~s/\//\*/;
+        $newop =~tr#\-+*/#+\-/*#;
         if (! $rightFirst) {
             $newleft = GenerateStmBfromStmA("$left",$stmnum,$path."l");
         }
-        if ($op eq $rightop) {
-            $newright= GenerateStmBfromStmA("( $op $rightright $rightleft )",$stmnum,$path."r");
-        } else {
+        $newright= GenerateStmBfromStmA("( $op $rightright $rightleft )",$stmnum,$path."r");
+        if ($rightFirst) {
+            $newleft = GenerateStmBfromStmA("$left",$stmnum,$path."l");
+        }
+        return "( $newop $newleft $newright )";
+    }
+
+    if (rand() < 0.01 && (($op eq "+s") ||
+                         ($op eq "*s") ||
+                         ($op eq "+m") ||
+                         ($op eq "+v") ||
+             (($rightop ne $op) && (($op eq "-s") ||
+                                     ($op eq "/s") ||
+                                     ($op eq "-m") ||
+                                     ($op eq "-v")))) && $axioms =~/Flipright/) {
+        $transform .= "stm$stmnum Flipright ${path} ";
+        $newop = $op;
+        $newop =~tr#\-+*/#+\-/*#;
+        if (! $rightFirst) {
+            $newleft = GenerateStmBfromStmA("$left",$stmnum,$path."l");
+        }
+        if (($rightop =~/(nv|nm)/) ||
+            (($op=~/[+\-]s/) && ($rightop eq "ns")) ||
+            (($op=~/[*\/]s/) && ($rightop eq "is"))) {
             $newright= GenerateStmBfromStmA("$rightleft",$stmnum,$path."r");
+        } else {
+            if (($op eq "+s") || ($op eq "-s")) { $newright = "( ns $right )" }
+            if (($op eq "*s") || ($op eq "/s")) { $newright = "( is $right )" }
+            if (($op eq "+v") || ($op eq "-v")) { $newright = "( nv $right )" }
+            if (($op eq "+m") || ($op eq "-m")) { $newright = "( nm $right )" }
+            $newright= GenerateStmBfromStmA("$newright",$stmnum,$path."r");
         }
         if ($rightFirst) {
             $newleft = GenerateStmBfromStmA("$left",$stmnum,$path."l");
@@ -1220,7 +1236,8 @@ while (<$templates>) {
     # Use then delete simple variable assigns
     while ($cse=~s/ (\S+) = (\S+) ; (.*)\1 / $1 = $2 ; $3$2 /) {} 
     $cse=~s/ ([tlp]\d+) = (\S+) ;//;
-    while ($cse=~s/ ([tlp]\d+) = ([^-][^;]+) ; (.*)\2 / $1 = $2 ; $3$1 /) {} 
+    while ($cse=~s/ ([tlp]\d+) = (\([^;]+\)) ; (.*)\2 / $1 = $2 ; $3$1 /) {} 
+    while ($cse=~s/ ([tlp]\d+) = ([^-][^;]+) ; (.*[\+\=\*\/\-] )\( \2 \) / $1 = $2 ; $3$1 /) {} 
     # Process * and / CSEs then handle + and - to find first use of an expression that occurs twice
     # Search for 7 patterns of parens (not a full search) with consideration of order of operations
     while (($cse=~/^(.*?)(;[^;]*?[\(\+\-\*=,] )([^()\+\-\/;]*\([^()]*\( [^()]* \)[^()]*\) [^()\+\-\/;]*[\/\*] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+\-\*=,] )\3( .*)/) 
@@ -1236,13 +1253,13 @@ while (<$templates>) {
       while ($cse=~s/ l$lcl = ([^;]+) ; (.*[\(\+\-\*=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
       $lcl++;
     }
-    while (($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] [^()\+\-;f]*[^()\+\-\*\/;f,])( .*[\(\+=,] )\3( .*)/) 
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] \( [^()]* \))( .*[\(\+=,] )\3( .*)/)
-        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] [^()\+\-;f]*[^()\+\-\*\/;f,])( .*[\(\+=,] )\3( .*)/)) {
+    while (($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( [^\*\/].*[\(\+=,] )\3( [^\*\/].*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \([^()]*\( [^()]* \)[^()]*\))( [^\*\/].*[\(\+=,] )\3( [^\*\/].*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\([^()]*\( [^()]* \)[^()]*\) [^();]*[\+\-] \( [^()]* \))( [^\*\/].*[\(\+=,] )\3( [^\*\/].*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] \( [^()]* \))( [^\*\/].*[\(\+=,] )\3( [^\*\/].*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]*\( [^()]* \) [^();]*[\+\-] [^()\+\-;f]*[^()\+\-\*\/;f,])( [^\*\/].*[\(\+=,] )\3( [^\*\/].*)/) 
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] \( [^()]* \))( [^\*\/].*[\(\+=,] )\3( [^\*\/].*)/)
+        || ($cse=~/^(.*?)(;[^;]*?[\(\+=,] )([^();]* [\+\-] [^()\+\-;f]*[^()\+\-\*\/;f,])( [^\*\/].*[\(\+=,] )\3( [^\*\/].*)/)) {
       $cse="$1; l$lcl = $3 $2l$lcl$4l$lcl$5";
       # Use new variable wherever possible in program
       while ($cse=~s/ l$lcl = ([^;]+) ; (.*[\(\+=,] )\1/ l$lcl = $1 ; $2l$lcl/) {} 
@@ -1527,6 +1544,14 @@ while (<$templates>) {
     while ($progTmp =~s/\)\(//g) {};
     next if length($progTmp)/2 > 5;
 
+    next if (scalar split /[;() ]+/," $cse_renamed ") -1 > $maxTokens;
+    next if (scalar split /;/,"$cse_renamed ") > 21;
+    next if (scalar split /;/,"$cse_renamed ") < 3;
+    $progTmp=$cse_renamed;
+    $progTmp=~s/[^()]//g;
+    while ($progTmp =~s/\)\(//g) {};
+    next if length($progTmp)/2 > 5;
+
     next if (scalar split /[;() ]+/," $str_reuse ") -1 > $maxTokens;
     next if (scalar split /;/,$str_reuse) > 21;
     $progTmp=$str_reuse;
@@ -1580,21 +1605,6 @@ while (<$templates>) {
         $str_axioms=$progB;
       }
     }
-    next if $transform=~/ N[lr][lr][lr][lr][lr]/;
-
-    next if (scalar split /[;() ]+/," $template_axioms ") -1 > $maxTokens;
-    next if (scalar split /;/,"$template_axioms ") > 21;
-    $progTmp=$template_axioms;
-    $progTmp=~s/[^()]//g;
-    while ($progTmp =~s/\)\(//g) {};
-    next if length($progTmp)/2 > 5;
-
-    next if (scalar split /[;() ]+/," $str_axioms ") -1 > $maxTokens;
-    next if (scalar split /;/,"$str_axioms ") > 21;
-    $progTmp=$str_axioms;
-    $progTmp=~s/[^()]//g;
-    while ($progTmp =~s/\)\(//g) {};
-    next if length($progTmp)/2 > 5;
 
     # Output equivalent programs with greppable labels
     if ($template_renamed ne $cse_renamed) {
@@ -1606,23 +1616,38 @@ while (<$templates>) {
     if ($str_renamed ne $str_reuse) {
       print "X ${str_renamed}Y ${str_reuse}Z Str Reuse \n";
     }
-    if ($str_reuse ne $str_axioms) {
-      print "X ${str_reuse}Y ${str_axioms}Z Reuse Axioms \n";
-    }
     if (($template_renamed ne $cse_renamed) &&
         ($cse_renamed ne $str_renamed)) {
       print "X ${template_renamed}Y ${str_reuse}Z Template Cse Str Reuse \n";
-    }
-    if (($template_renamed ne $cse_renamed) &&
-        ($cse_renamed ne $str_renamed) &&
-        ($str_reuse ne $str_axioms)) {
-      print "X ${template_renamed}Y ${str_axioms}Z Template Cse Str Reuse Axioms \n";
     }
     if ($template_renamed ne $str_renamed) {
       print "X ${str_renamed}Y ${template_renamed}Z Str Cse Template \n";
     }
     if ($str_reuse ne $template_renamed) {
       print "X ${str_reuse}Y ${template_renamed}Z Reuse Str Cse Template \n";
+    }
+
+    # Check that axioms did not create problem programs
+    next if $transform=~/ N[lr][lr][lr][lr][lr]/;
+    next if (scalar split /[;() ]+/," $template_axioms ") -1 > $maxTokens;
+    next if (scalar split /;/,"$template_axioms ") > 21;
+    $progTmp=$template_axioms;
+    $progTmp=~s/[^()]//g;
+    while ($progTmp =~s/\)\(//g) {};
+    next if length($progTmp)/2 > 5;
+    next if (scalar split /[;() ]+/," $str_axioms ") -1 > $maxTokens;
+    next if (scalar split /;/,"$str_axioms ") > 21;
+    $progTmp=$str_axioms;
+    $progTmp=~s/[^()]//g;
+    while ($progTmp =~s/\)\(//g) {};
+    next if length($progTmp)/2 > 5;
+    if ($str_reuse ne $str_axioms) {
+      print "X ${str_reuse}Y ${str_axioms}Z Reuse Axioms \n";
+    }
+    if (($template_renamed ne $cse_renamed) &&
+        ($cse_renamed ne $str_renamed) &&
+        ($str_reuse ne $str_axioms)) {
+      print "X ${template_renamed}Y ${str_axioms}Z Template Cse Str Reuse Axioms \n";
     }
     if (($str_reuse ne $template_renamed) &&
         ($template_renamed ne $template_axioms)) {

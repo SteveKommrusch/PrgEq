@@ -12,25 +12,9 @@ if (! -f $ARGV[0]) {
   print "  matrices, simple operators (+,-,*,/,invert,negate,transpose).\n";
   print "  Operators are typed as scalar, matrix, or vector, resulting in this list:\n";
   print "     +s -s *s /s is ns +m -m *m im nm tm +v -v *v nv\n";
-  print "  The transformations used are:\n";
-  print "  - Cancel: (-s a a) => 0; (/s a a) => 1, (*m A (im A)) => I, etc\n";
-  print "  - Noop: (+m A O) => A; (*m A I) => A, etc\n";
-  print "  - Double: (ns (ns a)) => a; (im (im A)) => A, etc\n";
-  print "  - Multzero: (*m A 0) => O; (*s 0 b) => 0, etc\n";
-  print "  - Commute: (+v v w) => (+v w v), etc\n";
-  print "  - Distribleft: (*s (+s a b) c) => (+s (*s a c) (*s b c)), etc\n";
-  print "  - Distribright: (*m A (+m B C) => (+m (*m A B) (*m A C)), etc\n";
-  print "  - Factorleft: (+s (*s a b) (*s a c) => (*s a (+s b c)), etc\n";
-  print "  - Factorright: (+s (*s a c) (*s b c) => (*s (+s a b) c), etc\n";
-  print "  - Assocleft: (*s a (*s b c)) => (*s (*s a b) c)), etc\n";
-  print "  - Assocright: (*s (*s a b) c)) => (*s a (*s b c)), etc\n";
-  print "  - Flipleft: (nv (-v v w)) => (-v w v)), (is (/s a b)) => (/s b a), etc\n";
-  print "  - Flipright: (/s a (/s b c)) => (*s a (/s c b)),\n";
-  print "               (-m A (nm B)) => (+m A B), (+v v w) => (-v v (nv w)),etc\n";
-  print "  - Transpose: (*m A B) => (tm (*m (tm B) (tm A)); (+m A B) => (tm (+m (tm B) (tm A))\n";
-  print "               (tm (*m A B)) => (*m (tm B) (tm A)), etc\n";
+  print "  The transformations used are documented in the grammar configFile\n";
   print " Example:\n";
-  print "  ./geneqv.pl \n";
+  print "  ../../src/geneqv.pl straightline.txt\n";
   exit(1);
 }
 
@@ -389,24 +373,24 @@ sub GenerateStmBfromStmA {
     my $stmnum = $_[1];
     my $path = $_[2];
 
-    if (rand() < 0.0005 && $axioms =~/Multone/) {
+    if (rand() < 0.0015 && $axioms =~/Multone/) {
         $transform .= "stm$stmnum Multone ${path} ";
         if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
-            $progA="( *s $progA 1s )";
+            $progA="( *s 1s $progA )";
         } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
-            $progA="( *v $progA 1s )";
+            $progA="( *v 1s $progA )";
         } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
-            $progA="( *m $progA 1s )";
+            $progA="( *m 1s $progA )";
         }
     }
     if (rand() < 0.001 && $axioms =~/Addzero/) {
         $transform .= "stm$stmnum Addzero ${path} ";
         if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
-            $progA="( +s $progA 0s )";
+            $progA="( +s 0s $progA )";
         } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
-            $progA="( +v $progA 0v )";
+            $progA="( +v 0v $progA )";
         } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
-            $progA="( +m $progA 0m )";
+            $progA="( +m 0m $progA )";
         }
     }
     if (rand() < 0.0005 && $axioms =~/Divone/) {
@@ -423,16 +407,6 @@ sub GenerateStmBfromStmA {
             $progA="( -v $progA 0v )";
         } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
             $progA="( -m $progA 0m )";
-        }
-    }
-    if (rand() < 0.0005 && $axioms =~/Multone/) {
-        $transform .= "stm$stmnum Multone ${path} ";
-        if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
-            $progA="( *s $progA 1s )";
-        } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
-            $progA="( *v $progA 1s )";
-        } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
-            $progA="( *m $progA 1s )";
         }
     }
     $progA =~s/^\( (\S+) // || return $progA;
@@ -909,21 +883,46 @@ sub GenerateStmBfromStmA {
         return "( $leftop $newleft $newright )";
     }
 
-    if (rand() < 0.25 && (($op eq "-s" && $rightop =~/[\-n]s/) ||
-                         ($op eq "/s" && $rightop =~/[\/i]s/) ||
-                         ($op eq "-m" && $rightop =~/[\-n]m/) ||
-                         ($op eq "-v" && $rightop =~/[\-n]v/)) && $axioms =~/Flipright/) {
+    if (rand() < 0.25 && (($op eq "-s") ||
+                         ($op eq "/s") ||
+                         ($op eq "-m") ||
+                         ($op eq "-v")) && ($rightop eq $op) && $axioms =~/Flipright/) {
         $transform .= "stm$stmnum Flipright ${path} ";
         $newop = $op;
-        $newop =~s/\-/\+/;
-        $newop =~s/\//\*/;
+        $newop =~tr#\-+*/#+\-/*#;
         if (! $rightFirst) {
             $newleft = GenerateStmBfromStmA("$left",$stmnum,$path."l");
         }
-        if ($op eq $rightop) {
-            $newright= GenerateStmBfromStmA("( $op $rightright $rightleft )",$stmnum,$path."r");
-        } else {
+        $newright= GenerateStmBfromStmA("( $op $rightright $rightleft )",$stmnum,$path."r");
+        if ($rightFirst) {
+            $newleft = GenerateStmBfromStmA("$left",$stmnum,$path."l");
+        }
+        return "( $newop $newleft $newright )";
+    } 
+    if (rand() < 0.01 && (($op eq "+s") ||
+                         ($op eq "*s") || 
+                         ($op eq "+m") || 
+                         ($op eq "+v") || 
+             (($rightop ne $op) && (($op eq "-s") ||
+                                     ($op eq "/s") ||
+                                     ($op eq "-m") ||
+                                     ($op eq "-v")))) && $axioms =~/Flipright/) {
+        $transform .= "stm$stmnum Flipright ${path} ";
+        $newop = $op;
+        $newop =~tr#\-+*/#+\-/*#;
+        if (! $rightFirst) {
+            $newleft = GenerateStmBfromStmA("$left",$stmnum,$path."l");
+        }
+        if (($rightop =~/(nv|nm)/) || 
+            (($op=~/[+\-]s/) && ($rightop eq "ns")) || 
+            (($op=~/[*\/]s/) && ($rightop eq "is"))) {
             $newright= GenerateStmBfromStmA("$rightleft",$stmnum,$path."r");
+        } else {
+            if (($op eq "+s") || ($op eq "-s")) { $newright = "( ns $right )" }
+            if (($op eq "*s") || ($op eq "/s")) { $newright = "( is $right )" }
+            if (($op eq "+v") || ($op eq "-v")) { $newright = "( nv $right )" }
+            if (($op eq "+m") || ($op eq "-m")) { $newright = "( nm $right )" }
+            $newright= GenerateStmBfromStmA("$newright",$stmnum,$path."r");
         }
         if ($rightFirst) {
             $newleft = GenerateStmBfromStmA("$left",$stmnum,$path."l");

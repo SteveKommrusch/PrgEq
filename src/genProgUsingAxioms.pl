@@ -251,20 +251,20 @@ sub GenProgUsingAxioms {
     # Process expression axioms
     if ($transform =~s/^Multone ${path} *$//) {
         if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
-            return "( *s $progA 1s )";
+            return "( *s 1s $progA )";
         } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
-            return "( *v $progA 1s )";
+            return "( *v 1s $progA )";
         } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
-            return "( *m $progA 1s )";
+            return "( *m 1s $progA )";
         }
     }
     if ($transform =~s/^Addzero ${path} *$//) {
         if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
-            return "( +s $progA 0s )";
+            return "( +s 0s $progA )";
         } elsif ($progA =~/^v\d/ || $progA=~/^\dv/ || $progA=~/^\( \S+v /) {
-            return "( +v $progA 0v )";
+            return "( +v 0v $progA )";
         } elsif ($progA =~/^m\d/ || $progA=~/^\dm/ || $progA=~/^\( \S+m /) {
-            return "( +m $progA 0m )";
+            return "( +m 0m $progA )";
         }
     }
     if ($transform =~s/^Divone ${path} *$//) {
@@ -680,18 +680,37 @@ sub GenProgUsingAxioms {
         return "( $leftop $newleft $newright )";
     }
 
-    if ((($op eq "-s" && $rightop =~/[\-n]s/) ||
-         ($op eq "/s" && $rightop =~/[\/i]s/) ||
-         ($op eq "-m" && $rightop =~/[\-n]m/) ||
-         ($op eq "-v" && $rightop =~/[\-n]v/)) && $transform =~s/^Flipright $path *$//) {
+    if ((($op eq "-s") ||
+         ($op eq "/s") ||
+         ($op eq "-m") ||
+         ($op eq "-v")) && ($rightop eq $op) && $transform =~s/^Flipright $path *$//) {
         $newop = $op;
-        $newop =~s/\-/\+/;
-        $newop =~s/\//\*/;
+        $newop =~tr#\-+*/#+\-/*#;
         $newleft = GenProgUsingAxioms("$left",$path."l",$transform);
-        if ($op eq $rightop) {
-            $newright= GenProgUsingAxioms("( $op $rightright $rightleft )",$path."r",$transform);
-        } else {
+        $newright= GenProgUsingAxioms("( $op $rightright $rightleft )",$path."r",$transform);
+        return "( $newop $newleft $newright )";
+    }
+    if ((($op eq "+s") ||
+         ($op eq "*s") ||
+         ($op eq "+m") ||
+         ($op eq "+v") ||
+         (($rightop ne $op) && (($op eq "-s") ||
+            ($op eq "/s") ||
+            ($op eq "-m") ||
+            ($op eq "-v")))) && $transform =~s/^Flipright $path *$//) {
+        $newop = $op;
+        $newop =~tr#\-+*/#+\-/*#;
+        $newleft = GenProgUsingAxioms("$left",$path."l",$transform);
+        if (($rightop =~/(nv|nm)/) ||
+            (($op=~/[+\-]s/) && ($rightop eq "ns")) ||
+            (($op=~/[*\/]s/) && ($rightop eq "is"))) {
             $newright= GenProgUsingAxioms("$rightleft",$path."r",$transform);
+        } else {
+            if (($op eq "+s") || ($op eq "-s")) { $newright = "( ns $right )" }
+            if (($op eq "*s") || ($op eq "/s")) { $newright = "( is $right )" }
+            if (($op eq "+v") || ($op eq "-v")) { $newright = "( nv $right )" }
+            if (($op eq "+m") || ($op eq "-m")) { $newright = "( nm $right )" }
+            $newright= GenProgUsingAxioms("$newright",$path."r",$transform);
         }
         return "( $newop $newleft $newright )";
     }
