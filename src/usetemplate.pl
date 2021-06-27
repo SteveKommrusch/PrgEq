@@ -222,6 +222,11 @@ sub InterAssignAxioms {
                     last;
                 }
             }
+            foreach my $var (keys %vars) {
+                if ($vars{$var} =~/$lhs/) {
+                    delete $vars{$var};
+                }
+            }
             if (! ($rhs =~/\(.*\(.*\(/) && $eq ne "===" && ! ($rhs =~/$lhs/)) {
                 $vars{$lhs}=$rhs;
             } else {
@@ -1177,6 +1182,8 @@ while (<$templates>) {
     $template=~s/!/-/g;
     $template=~s/\^/\+/g;
     $template=~s/( [=\+\-\*\/,(]) \+/$1/g;
+    $template=~s/\^/\+/g;
+    $template=~s/ (o\d+ [^;]+) ; t\d+ [^o]+(; *)$/ $1 $2/;
     next if $template=~/ [\+\-][\+\-] /;
     next if $template=~/ [fu]\S+ [^(]/;
     next if $template=~/ [=\*\-\+\/,;] [=,\);\*\/]/;

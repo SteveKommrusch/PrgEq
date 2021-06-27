@@ -223,6 +223,11 @@ sub InterAssignAxioms {
                     last;
                 }
             }
+            foreach my $var (keys %vars) {
+                if ($vars{$var} =~/$lhs/) {
+                    delete $vars{$var};
+                }
+            }
             if (! ($rhs =~/\(.*\(.*\(/) && $eq ne "===" && ! ($rhs =~/$lhs/)) {
                 $vars{$lhs}=$rhs;
             } else {
