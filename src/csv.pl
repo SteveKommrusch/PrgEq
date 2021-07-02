@@ -6,15 +6,15 @@ use warnings;
 if ( ! -d "$ARGV[0]" ) {
   print "$ARGV[0] does not exist\n";
 }
-if ( ! -f "./search25_10.txt" || ! -f "./template25_10.txt" || ! -f "$ARGV[0]/search25_10.txt" || ! -f "$ARGV[0]/template25_10.txt") {
+if ( ! -f "./syn50_10.txt" || ! -f "./tpl50_10.txt" || ! -f "$ARGV[0]/syn50_10.txt" || ! -f "$ARGV[0]/tpl50_10.txt") {
   print "Usage: csv.pl dir\n";
-  print "    Opens ./search25_10.txt, ./template25_10.txt and the same files \n";
+  print "    Opens ./syn50_10.txt, ./tpl50_10.txt and the same files \n";
   print "    in dir. Creates csv file with statistics on each sample.\n";
   exit(1);
 }
 
-open(my $base, "-|","grep -h \"^F[OA][UI][NL]\" search25_10.txt template25_10.txt") || die "open base files failed: $!";
-open(my $tune, "-|","grep -h \"^F[OA][UI][NL]\" $ARGV[0]/search25_10.txt $ARGV[0]/template25_10.txt") || die "open tune files failed: $!";
+open(my $base, "-|","grep -h \"^F[OA][UI][NL]\" syn50_10.txt tpl50_10.txt") || die "open base files failed: $!";
+open(my $tune, "-|","grep -h \"^F[OA][UI][NL]\" $ARGV[0]/syn50_10.txt $ARGV[0]/tpl50_10.txt") || die "open tune files failed: $!";
 
 my @srcvocab=(
 "+s",
@@ -286,15 +286,15 @@ print "Method,Tokens,Tokens,#Stm,#Stm,Pass,Pass,Inputs,Outs,Outs,Vars,Depth,Axio
 my $method="AxiomGen";
 while (<$base>) {
   my $tune_ln=<$tune> || die "tune files ended early";
-  /^(F\w+): (.*; )to (.*; )(bestguess|with) +(\S.*)Target path: (.*)Axioms evaluated:/ || die "bad syntax in base line: $_";
+  /^(F\w+): (.*; )to (.*; )(bestguess|with) +(\S.*)Target path: (.*)Axioms Evaluated:/ || die "bad syntax in base line: $_";
   print "$method,";
-  ($.==1000) && ($method="Template");
+  ($.==10000) && ($method="Template");
   my $found=$1;
   my $progA=$2;
   my $progB=$3;
   my $baseproof=$5;
   my $tgt=$6;
-  $tune_ln=~/^(F.*): \Q${progA}to ${progB}\E(bestguess|with) +(\S.*)Target path: ${tgt}Axioms evaluated/ || die "bad syntax in tuned line: $tune_ln Base line: $_";
+  $tune_ln=~/^(F.*): \Q${progA}to ${progB}\E(bestguess|with) +(\S.*)Target path: ${tgt}Axioms Evaluated/ || die "bad syntax in tuned line: $tune_ln Base line: $_";
   my $tune_found=$1;
   my $tuneproof=$3;
   if ($found=~/FOUND/) {

@@ -27,7 +27,7 @@ perl -e 'open($all,"<","all_test.txt"); while (<$all>) { /X (.* Y .*) Z (.*)$/ |
 
 for i in 1 2 3 4 5; do head -n ${i}0000 all_test_fullaxioms.txt | tail -n 10000 > tune_b${i}_fullaxioms.txt; done
 
-perl -ne 'if (!/(Cancel|Multzero|Double)/) {/X (.*) Y (.*) Z/; print "X $2 Y $1 Z Reversed \n"}' tune_b[12345]_fullaxioms.txt | shuf | head -n 10000 > tune_b5_fullaxioms.txt
+perl -ne 'if (!/(Cancel|Multzero|Double)/) {/X (.*) Y (.*) Z/; print "X $2 Y $1 Z Reversed \n"}' tune_b[12345]_fullaxioms.txt | shuf | head -n 10000 > tune_b6_fullaxioms.txt
 
 grep "^X .*===.* Y .*===.* Z " raw_template.txt | grep " = " | shuf | head -n 40000 > template_fullaxioms.txt
 
