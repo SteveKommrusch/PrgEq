@@ -1,32 +1,19 @@
-# pe-graph2axiom: Graph-to-sequence model based on OpenNMT-py framework.
+# S4Eq: Self-Supervised Learning to Prove Equivalence Between Programs via Semantics-Preserving Rewrite Rules
 
-pe-graph2axiom provides a model which allows training on equivalent program
-pairs to create axiomatic proofs of equivalence. Included are scripts which
-generate test and training data.
+S4Eq provides a model which allows training on equivalent program pairs to 
+create axiomatic proofs of equivalence. Included are scripts which
+generate test and training data, as well as data mined from GitHub.
 
-There are 2 versions of this file set; a 44MB pe-graph2axiom.zip file and a 699MB pe-graph2axiom-big file.
-
-### pe-graph2axiom.zip
-  * Provides all control scripts to generate datasets and train models as well as key results files found in our paper.
+  * Our paper detailing the use and testing of S4Eq is on ArXiv at: https://arxiv.org/abs/2109.10476
   * src/ includes all scripts used to generate training data and search for proofs using our trained model. Note: These scripts use slightly different axiom names than in the paper; in particular, Noop, Double, and Multzero are used in the code which correspond to NeutralOp, DoubleOp, and AbsorbOp in the paper.
   * data/ includes our dataset generation configuration files and the data/\*/all\_test\_fullaxiom.txt files showing the (P1,P2,S) tuples for the test sets.
-  * runs/ includes results for all 4 models presented in our paper. For each model we provide training output files, testset input files, OpenNMT interface scripts, and P1,P2 proof results from the models for beam search 1 and 10 (2 and 5 are provided in pe-graph2axiom-big). Our golden results of 9,310 successful equivalence proofs on a 10,000 sample testset are in runs/AxiomStep10/mbest\_300\_AxiomStep10/search10.txt.
-
-### pe-graph2axiom-big.zip
-  * This file is available via anonymous URL at: http://gofile.io/d/4MxVv1
-  * Includes all files from pe-graph2axiom.zip
-  * Provides all files needed to reproduce results found in our paper including our specific dataset files and trained models.
-  * src/ includes all scripts used to generate training data and search for proofs using our trained model.
-  * data/ includes our dataset generation configuration files and the data/\*/all\_test\* files showing the (P1,P2,S) tuples for the test sets, and test files used during inference by our models.
-  * runs/ includes input files, trained models, and results for all 4 models presented in our paper. In addition to files from pe-graph2axiom.zip, the full training dataset files for OpenNMT input are provided, as well as the saved model with the best validation score. Our golden model is runs/AxiomStep10/final-model\_step\_300000.pt.
+  * runs/ includes results for models presented in our paper. For each model we provide training output files, testset input files, OpenNMT interface scripts, and P1,P2 proof results from the models for intermediate beam search 10 (2 and 5 are provided in pe-graph2axiom-big). Our golden results of 9,310 successful equivalence proofs on a 10,000 sample testset are in runs/AxiomStep10/mbest\_300\_AxiomStep10/search10.txt.
 
 Table of Contents
 =================
   * [Requirements](#requirements)
   * [Quickstart](#quickstart)
   * [File Descriptions](#filedescriptions)
-  * [Acknowledgements](#acknowledgements)
-  * [Citation](#citation)
 
 ## Requirements
 
@@ -50,12 +37,10 @@ Note: If you have MemoryError in the install try to use `pip` with `--no-cache-d
 pip install -r requirements.opt.txt
 ```
 
-### Step 2: Install pe-graph2axiom
+### Step 2: Install PrgEq
 ```bash
-# cd to the parent directory to OpenNMT-py
-# At camera-ready: git clone <anonymized>
-# For now, get pe-graph2axiom.zip
-unzip pe-graph2axiom.zip
+# cd to the parent directory of OpenNMT-py
+# git clone https://github.com/SteveKommrusch/PrgEq.git
 ```
 
 ## Quickstart
@@ -71,7 +56,7 @@ cat env.sh
 ```bash
 # cd to top of repository 
 source ./env.sh
-cd data
+cd ../data
 # geneqv.pl randomly generates program pairs and proofs in human-readable format
 ../src/geneqv.pl genenv_AxiomStep10.txt > raw_AxiomStep10.txt
 # pre1axiom.pl creates N 1-axiom training samples for N-axiom long proofs in the raw file
@@ -170,10 +155,3 @@ The repository contains data, models, and results used for publication, but thes
  * runs/WholeProof\*/mbest_\*/pass\*: are the results of checking whether generated proofs prove exactly match the test sample target proof.
 
 
-## Acknowledgements
-
-Will be added for camera-ready version.
-
-## Citation
-
-Will be added for camera-ready version.
