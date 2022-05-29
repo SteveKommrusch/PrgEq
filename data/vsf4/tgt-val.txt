@@ -1,0 +1,1000 @@
+stm3 Commute Nrl
+stm4 Swapprev
+stm1 Commute Nr
+stm4 Swapprev
+stm1 Assocright N
+stm9 Multzero N
+stm5 Commute Nrl
+stm19 Swapprev
+stm6 Commute Nl
+stm14 Commute Nrlr
+stm10 Inline s18
+stm2 Assocleft N
+stm4 Double N
+stm13 Inline s18
+stm5 Multone Nll
+stm2 Swapprev
+stm3 Multzero Nl
+stm2 Flipleft N
+stm3 Distribleft N
+stm2 Cancel Nrr
+stm16 Inline s05
+stm9 Distribleft Nr
+stm6 Inline s08
+stm4 Swapprev
+stm14 Noop N
+stm7 Commute Nl
+stm9 Noop N
+stm4 Addzero Nl
+stm1 Assocright Nl
+stm11 Inline s24
+stm4 Flipright Nr
+stm3 Noop Nrrll
+stm2 Multzero Nr
+stm9 Assocright N
+stm3 Commute Nlr
+stm3 Distribleft N
+stm9 Assocleft N
+stm14 Deletestm
+stm2 Distribleft Nl
+stm4 Distribleft Nrr
+stm14 Commute Nl
+stm7 Swapprev
+stm2 Factorright Nlrr
+stm2 Cancel Nl
+stm15 Commute N
+stm10 Inline v01
+stm6 Commute Nl
+stm8 Commute N
+stm4 Commute Nl
+stm2 Multzero Nlll
+stm2 Commute Nrl
+stm4 Newtmp Nllrr s23
+stm3 Assocleft N
+stm5 Assocright Nl
+stm3 Assocleft N
+stm1 Flipright N
+stm6 Noop N
+stm5 Flipright Nll
+stm16 Flipright Nr
+stm4 Flipright Nl
+stm3 Multzero N
+stm8 Swapprev
+stm3 Newtmp Nrlr s14
+stm8 Commute N
+stm9 Swapprev
+stm7 Distribleft N
+stm2 Noop Nl
+stm2 Assocleft Nr
+stm4 Assocleft Nl
+stm2 Multzero Nlrll
+stm7 Assocleft Nl
+stm5 Distribright Nlll
+stm7 Swapprev
+stm9 Commute Nlll
+stm7 Assocright N
+stm3 Commute Nr
+stm5 Multzero Nl
+stm8 Commute N
+stm3 Cancel Nllr
+stm19 Noop N
+stm3 Assocright N
+stm16 Noop N
+stm3 Multzero N
+stm5 Commute Nll
+stm2 Assocleft Nl
+stm3 Noop N
+stm2 Distribleft N
+stm12 Addzero N
+stm4 Assocright Nll
+stm8 Flipright N
+stm3 Inline s24
+stm4 Multzero Nl
+stm10 Addzero Nl
+stm1 Noop Nr
+stm3 Assocleft Nl
+stm4 Rename v16
+stm19 Inline s05
+stm13 Flipright N
+stm7 Commute N
+stm3 Cancel Nr
+stm11 Multone Nr
+stm4 Usevar v26
+stm3 Usevar s11
+stm2 Multone Nll
+stm5 Noop Nr
+stm1 Multzero Nrr
+stm3 Assocleft N
+stm1 Distribleft Nr
+stm1 Noop N
+stm14 Flipright N
+stm10 Deletestm
+stm9 Multzero Nr
+stm4 Assocleft N
+stm4 Assocleft N
+stm3 Commute Nl
+stm6 Swapprev
+stm9 Swapprev
+stm4 Inline v29
+stm2 Noop Nr
+stm3 Cancel Nrrr
+stm1 Newtmp Nllr v17
+stm2 Assocleft N
+stm7 Usevar s08
+stm4 Distribleft N
+stm5 Swapprev
+stm1 Noop N
+stm16 Swapprev
+stm3 Noop N
+stm4 Double Nll
+stm12 Distribleft N
+stm10 Inline s09
+stm6 Assocright N
+stm3 Swapprev
+stm13 Subzero Nl
+stm3 Inline s14
+stm2 Noop Nr
+stm5 Noop Nrll
+stm8 Multzero Nl
+stm1 Noop Nl
+stm5 Addzero Nl
+stm12 Inline s11
+stm2 Flipright N
+stm4 Swapprev
+stm17 Swapprev
+stm5 Addzero Nr
+stm6 Commute N
+stm7 Swapprev
+stm12 Swapprev
+stm1 Newtmp Nl s27
+stm2 Multzero Nlll
+stm8 Distribleft Nr
+stm10 Swapprev
+stm1 Noop N
+stm11 Swapprev
+stm17 Inline s07
+stm8 Swapprev
+stm16 Flipright N
+stm2 Noop Nllr
+stm7 Assocright N
+stm13 Commute N
+stm8 Multone Nrrrl
+stm3 Assocright Nr
+stm8 Multzero Nl
+stm18 Noop Nl
+stm1 Multzero Nlr
+stm1 Commute Nrl
+stm1 Multzero N
+stm14 Inline s04
+stm7 Commute N
+stm17 Usevar s04
+stm2 Distribleft N
+stm2 Multone Nr
+stm6 Flipright Nrrr
+stm5 Flipright N
+stm2 Cancel Nllr
+stm13 Swapprev
+stm3 Distribleft N
+stm3 Assocleft N
+stm5 Flipright N
+stm13 Multone Nl
+stm17 Swapprev
+stm5 Inline v07
+stm17 Inline v03
+stm9 Commute N
+stm5 Inline v08
+stm4 Multzero Nr
+stm5 Distribright N
+stm1 Multzero Nlrr
+stm7 Assocleft N
+stm12 Swapprev
+stm8 Swapprev
+stm13 Deletestm
+stm5 Subzero Nll
+stm9 Assocright N
+stm2 Multzero Nr
+stm4 Cancel Nrr
+stm13 Swapprev
+stm7 Swapprev
+stm10 Divone Nl
+stm5 Flipright N
+stm8 Commute N
+stm2 Noop Nr
+stm2 Assocleft N
+stm4 Commute N
+stm14 Inline s04
+stm5 Swapprev
+stm1 Noop Nr
+stm15 Double N
+stm7 Multone Nrr
+stm5 Distribleft N
+stm12 Flipright N
+stm6 Commute Nr
+stm12 Factorright N
+stm4 Assocleft Nr
+stm5 Assocleft Nr
+stm3 Addzero Nr
+stm1 Multzero Nl
+stm13 Swapprev
+stm10 Swapprev
+stm13 Swapprev
+stm1 Flipright N
+stm3 Assocleft N
+stm1 Noop Nlr
+stm3 Factorleft N
+stm1 Commute N
+stm4 Distribleft Nrl
+stm4 Multzero Nr
+stm10 Flipright N
+stm11 Swapprev
+stm7 Addzero Nl
+stm6 Swapprev
+stm5 Flipright Nlrr
+stm3 Commute N
+stm2 Deletestm
+stm9 Assocleft N
+stm3 Assocleft Nl
+stm6 Flipright Nr
+stm12 Commute N
+stm8 Multzero Nl
+stm17 Addzero Nl
+stm4 Addzero Nr
+stm4 Swapprev
+stm6 Flipright Nrr
+stm2 Inline s15
+stm14 Inline s18
+stm2 Assocleft N
+stm6 Commute N
+stm2 Commute N
+stm6 Commute Nr
+stm3 Assocleft N
+stm6 Distribleft N
+stm4 Multone N
+stm1 Addzero Nll
+stm1 Commute N
+stm6 Distribleft Nrrl
+stm9 Commute N
+stm4 Commute N
+stm5 Flipright N
+stm9 Usevar s26
+stm1 Assocleft Nr
+stm4 Multzero Nl
+stm7 Assocleft Nll
+stm7 Commute Nr
+stm5 Assocright Nlr
+stm8 Assocright N
+stm10 Distribright N
+stm3 Assocleft Nr
+stm4 Noop N
+stm6 Commute Nlr
+stm3 Commute Nr
+stm4 Swapprev
+stm7 Assocleft Nrl
+stm1 Double N
+stm8 Noop N
+stm6 Flipright Nr
+stm4 Inline s01
+stm13 Cancel Nl
+stm3 Multone Nll
+stm4 Subzero Nll
+stm4 Swapprev
+stm1 Commute Nl
+stm5 Swapprev
+stm2 Cancel Nlrr
+stm18 Commute N
+stm9 Inline v14
+stm1 Flipright N
+stm4 Swapprev
+stm2 Multzero N
+stm3 Distribleft N
+stm3 Flipright Nrr
+stm1 Addzero N
+stm6 Commute Nrr
+stm5 Commute Nlr
+stm4 Deletestm
+stm6 Distribleft N
+stm6 Commute N
+stm16 Deletestm
+stm2 Flipright Nlr
+stm4 Commute N
+stm2 Commute Nr
+stm4 Swapprev
+stm7 Addzero Nl
+stm18 Inline s30
+stm16 Multone Nr
+stm2 Commute N
+stm5 Swapprev
+stm2 Flipright N
+stm1 Noop Nlrl
+stm11 Rename v29
+stm7 Deletestm
+stm6 Subzero Nl
+stm10 Addzero Nr
+stm12 Distribleft N
+stm5 Commute N
+stm5 Usevar s12
+stm1 Cancel Nlrl
+stm9 Commute Nr
+stm6 Assocleft N
+stm6 Noop N
+stm8 Usevar v03
+stm1 Multzero Nrr
+stm20 Noop N
+stm9 Multzero Nr
+stm4 Distribright N
+stm7 Multone Nrrll
+stm5 Distribleft N
+stm8 Inline s18
+stm6 Assocleft N
+stm10 Noop N
+stm1 Distribleft Nrr
+stm15 Swapprev
+stm1 Multone Nlrr
+stm4 Noop Nlr
+stm6 Flipright Nl
+stm11 Commute N
+stm10 Commute N
+stm4 Noop N
+stm5 Assocright Nl
+stm5 Distribleft N
+stm5 Commute N
+stm1 Cancel Nl
+stm3 Swapprev
+stm2 Assocright Nl
+stm3 Multone Nlllr
+stm1 Noop Nll
+stm6 Flipright N
+stm4 Noop N
+stm7 Multzero Nrl
+stm10 Multone Nll
+stm1 Multzero Nl
+stm18 Inline s11
+stm2 Noop N
+stm2 Flipright Nrll
+stm3 Swapprev
+stm8 Distribright Nl
+stm14 Rename v21
+stm2 Noop Nlr
+stm4 Distribright Nl
+stm3 Distribleft N
+stm17 Deletestm
+stm1 Assocleft N
+stm6 Swapprev
+stm4 Swapprev
+stm2 Distribleft Nrl
+stm7 Noop Nl
+stm5 Factorright N
+stm3 Addzero Nlll
+stm3 Noop N
+stm3 Assocleft N
+stm2 Distribright Nl
+stm9 Swapprev
+stm8 Noop Nlr
+stm7 Noop N
+stm3 Inline s23
+stm8 Swapprev
+stm15 Multone Nr
+stm1 Commute Nr
+stm3 Flipleft N
+stm6 Distribleft N
+stm9 Multone Nrl
+stm2 Commute Nrll
+stm3 Assocleft Nl
+stm1 Commute Nlr
+stm4 Flipleft N
+stm9 Usevar s12
+stm4 Noop Nlr
+stm4 Subzero N
+stm7 Commute Nlr
+stm12 Swapprev
+stm13 Multone N
+stm9 Assocleft Nl
+stm15 Deletestm
+stm14 Commute Nr
+stm7 Noop Nlr
+stm2 Cancel Nr
+stm5 Multone Nl
+stm7 Flipright N
+stm6 Swapprev
+stm4 Multzero N
+stm9 Commute Nrrr
+stm6 Multone N
+stm1 Commute N
+stm4 Newtmp Nll s27
+stm17 Swapprev
+stm1 Factorright Nll
+stm5 Commute Nl
+stm2 Multzero Nl
+stm3 Commute Nl
+stm10 Swapprev
+stm12 Assocright N
+stm2 Multone Nll
+stm8 Flipright N
+stm2 Divone N
+stm13 Multone Nr
+stm3 Distribright Nrr
+stm3 Multzero Nl
+stm9 Commute N
+stm6 Swapprev
+stm3 Flipright Nrll
+stm6 Assocright N
+stm6 Multzero Nr
+stm15 Usevar s09
+stm6 Noop Nrl
+stm6 Multone N
+stm3 Swapprev
+stm1 Multzero Nlrl
+stm2 Assocleft Nr
+stm3 Rename s29
+stm3 Noop N
+stm1 Assocright N
+stm1 Cancel Nr
+stm16 Swapprev
+stm5 Commute N
+stm4 Commute Nl
+stm18 Assocright N
+stm15 Commute N
+stm6 Newtmp Nl s16
+stm18 Inline s02
+stm3 Multone Nllrl
+stm8 Inline v20
+stm16 Subzero N
+stm6 Multone N
+stm5 Flipright Nr
+stm5 Distribright Nrlr
+stm19 Addzero Nl
+stm6 Commute N
+stm10 Inline s21
+stm2 Inline v04
+stm8 Swapprev
+stm3 Cancel Nrrr
+stm5 Multzero Nrl
+stm13 Commute Nl
+stm5 Commute Nl
+stm3 Commute Nl
+stm14 Noop N
+stm2 Commute Nlll
+stm1 Assocright Nr
+stm1 Multzero N
+stm4 Commute N
+stm8 Noop Nl
+stm7 Addzero N
+stm15 Distribleft N
+stm4 Distribleft Nl
+stm6 Multone Nrr
+stm18 Usevar s17
+stm6 Noop Nrr
+stm7 Distribright Nrrr
+stm13 Deletestm
+stm3 Assocright N
+stm7 Assocleft Nl
+stm3 Noop N
+stm1 Multone Nlr
+stm12 Distribleft N
+stm15 Swapprev
+stm3 Divone Nrrl
+stm16 Noop N
+stm8 Distribright N
+stm2 Flipleft Nrl
+stm6 Commute Nll
+stm17 Deletestm
+stm12 Commute Nr
+stm5 Noop N
+stm2 Multzero Nrl
+stm8 Multone Nlllr
+stm17 Multone N
+stm12 Distribleft N
+stm5 Inline s26
+stm2 Usevar s27
+stm6 Assocright Nr
+stm7 Commute Nr
+stm3 Commute N
+stm5 Swapprev
+stm3 Factorright N
+stm7 Noop Nl
+stm4 Distribleft Nr
+stm13 Swapprev
+stm15 Swapprev
+stm7 Assocleft N
+stm5 Distribleft Nll
+stm5 Swapprev
+stm2 Swapprev
+stm13 Addzero Nl
+stm12 Swapprev
+stm6 Commute Nr
+stm7 Commute N
+stm6 Commute N
+stm2 Multzero Nr
+stm13 Usevar s22
+stm6 Multzero Nlrrr
+stm14 Noop N
+stm13 Swapprev
+stm10 Commute N
+stm5 Swapprev
+stm5 Flipright N
+stm3 Inline s23
+stm5 Multzero Nl
+stm4 Noop Nll
+stm6 Flipright Nr
+stm6 Multzero Nl
+stm5 Flipleft N
+stm5 Assocright Nr
+stm1 Distribleft N
+stm6 Commute Nr
+stm5 Assocright Nrl
+stm3 Assocleft Nl
+stm11 Commute N
+stm2 Noop Nl
+stm3 Multzero Nl
+stm3 Cancel Nrr
+stm12 Flipright N
+stm4 Flipleft N
+stm12 Inline s23
+stm10 Distribright N
+stm3 Newtmp Nl s16
+stm14 Flipright N
+stm5 Multzero N
+stm2 Addzero N
+stm12 Swapprev
+stm4 Swapprev
+stm4 Flipleft N
+stm13 Flipright N
+stm2 Assocleft N
+stm4 Assocleft Nr
+stm1 Multzero Nl
+stm1 Distribleft Nr
+stm5 Noop N
+stm16 Multzero N
+stm1 Multzero Nr
+stm8 Flipright N
+stm4 Multzero Nl
+stm9 Distribleft N
+stm7 Divone N
+stm20 Commute Nl
+stm5 Flipright Nll
+stm5 Flipright Nl
+stm2 Multzero N
+stm1 Multzero N
+stm4 Flipright Nllr
+stm5 Multone Nr
+stm17 Noop N
+stm2 Multzero N
+stm13 Swapprev
+stm4 Noop N
+stm11 Swapprev
+stm7 Assocright N
+stm7 Assocleft Nl
+stm1 Factorright Nlr
+stm4 Commute N
+stm7 Commute N
+stm4 Assocright N
+stm1 Subzero Nlll
+stm5 Multone Nrrr
+stm4 Noop N
+stm18 Inline v14
+stm5 Double Nlr
+stm12 Multone Nr
+stm14 Commute N
+stm4 Noop N
+stm1 Distribleft N
+stm2 Noop Nll
+stm9 Flipright N
+stm6 Distribright N
+stm18 Divone Nrl
+stm16 Multone Nl
+stm1 Noop Nl
+stm4 Newtmp Nlrr s29
+stm7 Inline v01
+stm17 Noop N
+stm5 Distribright Nr
+stm14 Rename s22
+stm17 Commute N
+stm1 Multzero Nrrl
+stm13 Commute N
+stm6 Assocleft N
+stm5 Noop Nl
+stm9 Swapprev
+stm7 Multone Nl
+stm7 Commute Nr
+stm6 Commute Nlr
+stm5 Assocleft Nlr
+stm6 Noop N
+stm10 Assocright N
+stm3 Commute N
+stm2 Noop Nlrl
+stm2 Commute Nll
+stm4 Multzero Nrrr
+stm5 Distribleft N
+stm5 Assocright Nl
+stm5 Assocright N
+stm7 Assocright Nl
+stm15 Multzero Nl
+stm17 Noop N
+stm6 Commute Nr
+stm5 Swapprev
+stm3 Cancel Nl
+stm8 Assocleft Nl
+stm12 Commute N
+stm4 Commute N
+stm7 Distribright Nrr
+stm3 Multzero Nr
+stm4 Flipright N
+stm17 Assocleft N
+stm12 Inline v01
+stm18 Commute N
+stm7 Distribright Nll
+stm1 Multzero Nl
+stm6 Noop Nl
+stm16 Commute N
+stm7 Commute Nll
+stm6 Inline s20
+stm4 Flipright Nlr
+stm3 Swapprev
+stm5 Cancel Nrr
+stm5 Assocleft Nl
+stm1 Assocleft Nll
+stm1 Multzero N
+stm5 Usevar v01
+stm4 Assocleft N
+stm5 Assocright N
+stm18 Flipright N
+stm6 Usevar s11
+stm5 Flipright Nrr
+stm6 Swapprev
+stm4 Swapprev
+stm10 Commute N
+stm15 Swapprev
+stm3 Swapprev
+stm11 Usevar v17
+stm8 Commute Nr
+stm8 Multone Nrl
+stm2 Swapprev
+stm1 Assocleft N
+stm15 Multzero Nr
+stm3 Swapprev
+stm3 Swapprev
+stm9 Inline v18
+stm17 Usevar v15
+stm6 Assocright N
+stm3 Commute N
+stm3 Assocleft N
+stm1 Subzero Nll
+stm8 Flipright Nrl
+stm17 Swapprev
+stm14 Assocleft N
+stm2 Subzero Nl
+stm5 Assocright Nr
+stm11 Inline s12
+stm1 Assocleft N
+stm5 Flipright Nllr
+stm7 Inline v04
+stm16 Swapprev
+stm2 Noop Nlr
+stm5 Assocright Nll
+stm5 Assocleft N
+stm11 Distribleft N
+stm13 Commute N
+stm5 Deletestm
+stm3 Distribright N
+stm2 Flipright N
+stm9 Addzero Nr
+stm11 Distribright N
+stm3 Assocleft N
+stm5 Commute Nll
+stm6 Commute Nllll
+stm8 Noop N
+stm10 Commute Nl
+stm3 Multzero Nr
+stm10 Commute Nl
+stm16 Commute N
+stm17 Commute N
+stm2 Rename v03
+stm9 Flipright Nrl
+stm8 Flipright Nr
+stm12 Swapprev
+stm2 Commute Nlr
+stm3 Flipleft N
+stm8 Commute N
+stm3 Multzero N
+stm2 Distribleft Nl
+stm4 Commute Nl
+stm5 Multzero Nr
+stm3 Swapprev
+stm5 Factorright Nr
+stm2 Multzero Nl
+stm1 Noop N
+stm1 Multone Nrr
+stm5 Inline v13
+stm4 Distribright N
+stm6 Rename s23
+stm1 Commute Nll
+stm3 Multzero Nl
+stm9 Swapprev
+stm10 Commute N
+stm2 Noop N
+stm7 Multone Nr
+stm7 Swapprev
+stm1 Flipright Nl
+stm8 Usevar s25
+stm3 Distribleft Nl
+stm4 Noop Nrrl
+stm4 Assocleft Nr
+stm10 Inline s01
+stm8 Distribright N
+stm5 Swapprev
+stm17 Inline s21
+stm18 Noop N
+stm6 Distribleft Nrl
+stm3 Multone Nl
+stm4 Multzero Nr
+stm10 Swapprev
+stm7 Divone Nr
+stm7 Addzero Nrr
+stm10 Multone N
+stm3 Flipright Nl
+stm8 Usevar s25
+stm3 Flipright Nllr
+stm2 Multzero Nlll
+stm10 Inline s22
+stm5 Assocright N
+stm3 Multzero Nr
+stm5 Multzero Nlrr
+stm5 Distribright N
+stm1 Noop Nl
+stm6 Distribleft Nl
+stm4 Multone Nr
+stm1 Flipright N
+stm5 Swapprev
+stm4 Cancel Nll
+stm9 Assocleft N
+stm13 Commute N
+stm10 Assocleft N
+stm3 Commute N
+stm7 Deletestm
+stm2 Commute Nlr
+stm2 Commute Nl
+stm15 Noop N
+stm3 Assocleft N
+stm3 Newtmp Nll s15
+stm5 Assocleft N
+stm12 Flipright N
+stm6 Assocright N
+stm7 Swapprev
+stm2 Double Nr
+stm16 Addzero Nr
+stm5 Flipright Nrl
+stm3 Usevar s16
+stm7 Rename v09
+stm13 Flipright N
+stm7 Inline s25
+stm18 Swapprev
+stm4 Usevar v08
+stm12 Commute N
+stm1 Cancel Nllr
+stm5 Commute N
+stm5 Multone Nllr
+stm2 Distribright N
+stm14 Flipright N
+stm5 Commute Nr
+stm4 Noop N
+stm12 Usevar s17
+stm8 Swapprev
+stm8 Swapprev
+stm11 Distribright N
+stm4 Divone Nl
+stm15 Cancel Nl
+stm7 Swapprev
+stm2 Noop Nrr
+stm1 Multzero N
+stm3 Noop Nll
+stm11 Flipright N
+stm1 Distribright N
+stm1 Subzero Nl
+stm2 Subzero Nl
+stm7 Commute N
+stm1 Noop Nr
+stm3 Assocleft Nrrr
+stm2 Distribright N
+stm9 Flipright N
+stm8 Flipright N
+stm13 Swapprev
+stm4 Commute Nlr
+stm8 Inline s06
+stm3 Commute Nlr
+stm5 Assocleft N
+stm2 Assocright Nl
+stm13 Inline s18
+stm5 Factorright N
+stm14 Cancel Nr
+stm2 Assocright Nll
+stm6 Distribright N
+stm10 Assocleft N
+stm5 Commute N
+stm7 Swapprev
+stm4 Distribleft Nr
+stm10 Flipright N
+stm8 Commute Nrl
+stm1 Noop Nllr
+stm16 Swapprev
+stm10 Assocright N
+stm7 Flipright N
+stm5 Distribleft Nl
+stm6 Commute Nrlr
+stm10 Flipright N
+stm11 Commute Nr
+stm1 Noop N
+stm3 Assocleft Nl
+stm14 Rename s12
+stm2 Addzero Nll
+stm5 Divone Nlrl
+stm2 Flipright N
+stm6 Deletestm
+stm14 Flipright Nr
+stm5 Distribright Nl
+stm4 Flipright Nlr
+stm2 Flipright N
+stm9 Flipright N
+stm2 Addzero Nrrr
+stm1 Assocright N
+stm4 Inline v15
+stm12 Commute Nr
+stm3 Assocleft N
+stm6 Commute Nr
+stm18 Commute N
+stm12 Assocright N
+stm9 Swapprev
+stm3 Cancel Nr
+stm3 Addzero Nrrlr
+stm15 Inline v04
+stm4 Commute N
+stm3 Multone Nlll
+stm2 Flipright N
+stm3 Factorright N
+stm12 Commute N
+stm2 Flipright Nll
+stm4 Flipright N
+stm5 Cancel Nr
+stm5 Assocleft N
+stm8 Swapprev
+stm4 Distribleft N
+stm4 Flipright N
+stm4 Multzero Nl
+stm17 Inline v17
+stm2 Multzero Nr
+stm15 Addzero Nr
+stm5 Inline s07
+stm2 Distribleft N
+stm1 Noop Nlr
+stm5 Noop Nr
+stm2 Multone Nrlr
+stm7 Multzero Nrr
+stm6 Noop Nr
+stm6 Distribleft Nl
+stm5 Noop Nrrl
+stm5 Swapprev
+stm11 Multone Nr
+stm9 Deletestm
+stm8 Swapprev
+stm10 Commute Nl
+stm5 Distribright N
+stm5 Assocright Nl
+stm2 Noop Nrll
+stm11 Swapprev
+stm1 Noop N
+stm6 Noop N
+stm4 Multzero N
+stm3 Distribleft N
+stm4 Inline v11
+stm1 Commute Nlr
+stm5 Commute N
+stm2 Distribright N
+stm9 Inline s26
+stm11 Assocleft N
+stm1 Assocleft Nll
+stm14 Swapprev
+stm4 Commute N
+stm8 Addzero Nr
+stm9 Usevar s07
+stm2 Assocright Nl
+stm1 Divone N
+stm11 Commute N
+stm13 Swapprev
+stm1 Distribleft N
+stm11 Distribright N
+stm2 Commute Nr
+stm5 Commute N
+stm6 Inline s29
+stm3 Commute Nr
+stm4 Cancel Nll
+stm4 Noop Nr
+stm5 Addzero N
+stm5 Noop N
+stm1 Factorleft N
+stm13 Commute N
+stm2 Subzero N
+stm10 Commute N
+stm8 Flipright N
+stm3 Flipright N
+stm3 Cancel Nl
+stm9 Swapprev
+stm5 Usevar s22
+stm12 Addzero N
+stm20 Commute N
+stm9 Noop Nrr
+stm10 Commute Nll
+stm2 Addzero Nl
+stm10 Subzero N
+stm5 Assocleft Nrl
+stm10 Inline s26
+stm8 Usevar s14
+stm2 Distribright N
+stm1 Flipright N
+stm8 Swapprev
+stm3 Assocleft N
+stm1 Distribleft N
+stm10 Noop Nl
+stm12 Multzero N
+stm2 Multzero Nrr
+stm1 Multzero Nll
+stm3 Flipright N
+stm6 Flipright N
+stm2 Divone N
+stm3 Commute Nl
+stm2 Distribright N
+stm17 Multone Nlr
+stm4 Commute Nr
+stm18 Commute N
+stm11 Usevar s01
+stm5 Factorright N
+stm7 Swapprev
+stm16 Noop N
+stm7 Inline s15
+stm13 Distribright N
+stm1 Assocright Nl
+stm2 Noop Nrl
+stm1 Addzero Nlr
+stm19 Swapprev
+stm3 Multzero Nll
+stm9 Distribright N
+stm7 Usevar s19
+stm2 Multone N
+stm3 Multzero N
+stm9 Noop Nr
+stm4 Addzero Nrl
+stm4 Flipright N
+stm13 Noop N
+stm6 Inline s19
+stm2 Factorleft N
+stm1 Commute Nl
+stm3 Assocleft Nr
+stm8 Usevar s23
+stm5 Inline s17
+stm4 Usevar s27
+stm6 Commute Nll
+stm8 Deletestm
+stm11 Multzero N
+stm16 Noop Nl
+stm4 Multzero N
+stm4 Swapprev
+stm10 Inline v12
+stm1 Cancel Nlll
+stm5 Distribleft N
+stm5 Assocright N
+stm9 Assocleft N
+stm12 Swapprev
+stm7 Assocleft N
+stm1 Assocleft N
+stm13 Multzero N
+stm6 Assocright N
+stm12 Addzero Nr
+stm2 Newtmp Nll s15
+stm4 Multzero Nr
+stm1 Noop Nrr
+stm2 Noop Nlrr
+stm8 Flipright N
+stm1 Flipright N
+stm7 Flipright Nr
+stm3 Commute Nrlr
+stm4 Assocleft N
+stm3 Swapprev
+stm11 Multone Nr
