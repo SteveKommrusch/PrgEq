@@ -1,0 +1,50 @@
+world_size: 1
+gpu_ranks:
+- 0
+batch_size: 4
+valid_batch_size: 1
+src_vocab: srcvocab.txt
+tgt_vocab: tgtvocab.txt
+src_vocab_size: 160
+tgt_vocab_size: 160
+src_seq_length: 500
+tgt_seq_length: 8
+data:
+    corpus_1:
+        path_src: src-train.txt
+        path_tgt: tgt-train.txt
+    valid:
+        path_src: src-val.txt
+        path_tgt: tgt-val.txt
+save_model: tr_h8_l8_512_r18/model
+overwrite: false
+train_steps: 100000
+valid_steps: 10000
+save_checkpoint_steps: 20000
+optim: adam
+start_decay_steps: 20000
+decay_steps: 20000
+learning_rate: 0.0001
+learning_rate_decay: 0.8
+label_smoothing: 0.1
+param_init: 0
+param_init_glorot: true
+encoder_type: transformer
+decoder_type: transformer
+enc_layers: 8
+dec_layers: 8
+heads: 8
+rnn_size: 512
+word_vec_size: 512
+transformer_ff: 1024
+dropout:
+- 0.1
+attention_dropout:
+- 0.1
+copy_attn: true
+position_encoding: true
+accum_count: 8
+bridge: true
+tensorboard: true
+tensorboard_log_dir: tr_h8_l8_512_r18/tensorboard_log_dir
+seed: 0

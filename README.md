@@ -1,13 +1,14 @@
 # S4Eq: Self-Supervised Learning to Prove Equivalence Between Programs via Semantics-Preserving Rewrite Rules
 
 S4Eq provides a model which allows training on equivalent program pairs to 
-create axiomatic proofs of equivalence. Included are scripts which
-generate test and training data, as well as data mined from GitHub.
+create axiomatic proofs of equivalence. We use self-supervised sample selection to incrementally train
+the model; a technique in which proof attempts can be used to train the model to improve itself.
+Included are scripts which generate test and training data, as well as data mined from GitHub.
 
   * Our paper detailing the use and testing of S4Eq is on ArXiv at: https://arxiv.org/abs/2109.10476
-  * src/ includes all scripts used to generate training data and search for proofs using our trained model. Note: These scripts use slightly different axiom names than in the paper; in particular, Noop, Double, and Multzero are used in the code which correspond to NeutralOp, DoubleOp, and AbsorbOp in the paper.
-  * data/ includes our dataset generation configuration files and the data/\*/all\_test\_fullaxiom.txt files showing the (P1,P2,S) tuples for the test sets.
-  * runs/ includes results for models presented in our paper. For each model we provide training output files, testset input files, OpenNMT interface scripts, and P1,P2 proof results from the models for intermediate beam search 10 (2 and 5 are provided in pe-graph2axiom-big). Our golden results of 9,310 successful equivalence proofs on a 10,000 sample testset are in runs/AxiomStep10/mbest\_300\_AxiomStep10/search10.txt.
+  * src/ includes scripts used to generate training data and search for proofs using our trained model. Note: These scripts use slightly different axiom names than in the paper; in particular, Noop, Double, and Multzero are used in the code which correspond to NeutralOp, DoubleOp, and AbsorbOp in the paper.
+  * data/ includes our dataset generation configuration files, raw data from GitHub program samples, our evaluation program pairs, etc.
+  * runs/ includes results for models presented in our paper. In particular, runs/vfs4x/tr_h8_l8_512_r18 are our golden model and results for our model with 8 heads, 8 transformer layers, vector size 512, with a final iterative learning rate starting at 0.00005 and a final learning rate decay of 0.8.
 
 Table of Contents
 =================
@@ -47,36 +48,35 @@ pip install -r requirements.opt.txt
 
 ### Step 1: Environment setup
 ```bash
-# cd to top of repository 
+# cd to top of PrgEq repository 
 # Review env.sh script and adjust for your installation.
 cat env.sh
 ```
 
 ### Step 2: Prepare new datasets if desired
 ```bash
-# cd to top of repository 
+# cd to top of PrgEq repository 
 source ./env.sh
-cd ../data
+cd data/vsf4/
 # geneqv.pl randomly generates program pairs and proofs in human-readable format
-../src/geneqv.pl genenv_AxiomStep10.txt > raw_AxiomStep10.txt
+../../src/geneqv.pl straightline.txt > raw_straight.txt 
 # pre1axiom.pl creates N 1-axiom training samples for N-axiom long proofs in the raw file
-../src/pre1axiom.pl 99 raw_AxiomStep10 > pre1_AxiomStep10.txt
+../../src/pre1axiom.pl 220 raw_straight.txt > pre1axiom.out
 # pre2graph.pl creates GGNN input formate used by OpenNMT-py
-../src/pre2graph.pl < pre1_AxiomStep10.txt > all_AxiomStep10.txt
+../../src/pre2graph.pl < pre1axiom.out > all_straight.txt
 cd AxiomStep10
 # srcvaltest.sh creates training, validation, and test files from full dataset
-../../src/srcvaltest.sh ../all_AxiomStep10.txt
+../../src/srcvaltest.sh all_straight.txt
 ```
 
-### Step 3: Create models
+### Step 3: Create base model example
 ```bash
-# cd to top of repository 
+# cd to top of PrgEq repository 
 source ./env.sh
-cd AxiomStep10
-# Clean models if desired
-rm *.pt *out 
-# run.sh will use OpenNMT to preprocess datasets and train model. Can take several hours with GPU system
-setsid nice -n 19 run.sh > run.nohup.out 2>&1 < /dev/null &
+cd runs/vsf4x
+d=h8_l8_512_r18
+# onmt.sh will use OpenNMT to preprocess datasets and train model. Can take several hours with GPU system
+setsid nice -n 19 onmt.sh $d > tr_$d/onmt.out 2>&1 < /dev/null
 ```
 
 ### Step 4: Use models
