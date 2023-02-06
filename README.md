@@ -64,7 +64,6 @@ cd data/vsf4/
 ../../src/pre1axiom.pl 220 raw_straight.txt > pre1axiom.out
 # pre2graph.pl creates GGNN input formate used by OpenNMT-py
 ../../src/pre2graph.pl < pre1axiom.out > all_straight.txt
-cd AxiomStep10
 # srcvaltest.sh creates training, validation, and test files from full dataset
 ../../src/srcvaltest.sh all_straight.txt
 ```
@@ -79,9 +78,36 @@ d=h8_l8_512_r18
 setsid nice -n 19 onmt.sh $d > tr_$d/onmt.out 2>&1 < /dev/null
 ```
 
+### Step 4: Attempt proofs for incremental training of base model
+```bash
+# cd to top of PrgEq repository
+source ./env.sh
+# Generate template programs based on GitHub dataset
+cd data
+../src/usetemplate.pl vsf4/straightline.txt VRepair_templates.txt > vsf4_tune1/raw_template.txt
+# Repeat synthetic program pair generation from step 4
+cd vsf4x/vsf4_tune1
+../../src/geneqv.pl straightline.txt > raw_straight.txt 
+../../src/pre1axiom.pl 220 raw_straight.txt > pre1axiom.out
+../../src/srcvaltest.sh all_straight.txt
+# Create 10 sets of 10,000 program pairs for proof attempts
+../../src/srcvaltest_tune.sh
+```
+
+### Step 5: Attempt proofs for incremental training of base model
+```bash
+# The 4 lines below can be run with i=1,2,3,4,5,6,7,8,9,10
+# on the different test program pairs. The 20 search.pl commands can be run 
+# on 20 different machines for improved throughput, or on 1 machine.
+source eq.sh ; cd vsf4x ; t=tune1 ; i=1
+ln -s ../../data/vsf4_${t}/tune_b${i}_fullaxioms.txt ${t}_b${i}_fullaxioms.txt
+setsid nice -n 19 ../../src/search.pl 20 20 250 ${t}_b${i}_fullaxioms.txt tr_h8_l8_512_r18/model_step_100000.pt tr_h8_l8_512_r18/$t/b$i > tr_h8_l8_512_r18/$t/b$i/tune20_20.txt
+setsid nice -n 19 ../../src/search.pl 20 2 250 ${t}_b${i}_fullaxioms.txt tr_h8_l8_512_r18/model_step_100000.pt tr_h8_l8_512_r18/$t/b$i > tr_h8_l8_512_r18/$t/b$i/tune20_2.txt
+```
+
 ### Step 4: Use models
 ```bash
-# cd to top of repository
+# cd to top of PrgEq repository
 source ./env.sh
 cd AxiomStep10
 data_path=`/bin/pwd`
@@ -91,7 +117,7 @@ for i in 1 2 5 10; do ../../src/search.pl $i 99 ../../data/AxiomStep10/all_test.
 
 ### Step 5: Analyze results
 ```bash
-# cd to top of repository
+# cd to top of PrgEq repository
 cd runs/AxiomStep10/mbest_300_AxiomStep10
 # Note that all search*.txt results have FAIL or FOUND lines for all 10000 samples
 grep -c "^F" search*txt
