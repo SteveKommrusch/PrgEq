@@ -1,0 +1,52 @@
+world_size: 1
+gpu_ranks:
+- 0
+batch_size: 4
+valid_batch_size: 1
+src_vocab: ../srcvocab.txt
+tgt_vocab: ../tgtvocab.txt
+src_vocab_size: 160
+tgt_vocab_size: 160
+src_seq_length: 500
+tgt_seq_length: 8
+data:
+    corpus_1:
+        path_src: tune3/src-traint.txt
+        path_tgt: tune3/tgt-traint.txt
+    valid:
+        path_src: tune3/src-valt.txt
+        path_tgt: tune3/tgt-valt.txt
+save_model: m3_r18
+overwrite: false
+train_steps: 50000
+valid_steps: 10000
+save_checkpoint_steps: 10000
+optim: adam
+start_decay_steps: 5000
+decay_steps: 5000
+learning_rate: 0.0001
+learning_rate_decay: 0.8
+label_smoothing: 0.1
+param_init: 0
+param_init_glorot: true
+encoder_type: transformer
+decoder_type: transformer
+enc_layers: 8
+dec_layers: 8
+heads: 8
+rnn_size: 512
+word_vec_size: 512
+transformer_ff: 1024
+dropout:
+- 0.1
+attention_dropout:
+- 0.1
+copy_attn: true
+position_encoding: true
+accum_count: 8
+bridge: true
+tensorboard: true
+tensorboard_log_dir: tensorboard_log_dir
+seed: 0
+reset_optim: all
+train_from: m2_r18_step_50000.pt

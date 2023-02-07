@@ -41,7 +41,7 @@ pip install -r requirements.opt.txt
 ### Step 2: Install PrgEq
 ```bash
 # cd to the parent directory of OpenNMT-py
-# git clone https://github.com/SteveKommrusch/PrgEq.git
+git clone https://github.com/SteveKommrusch/PrgEq.git
 ```
 
 ## Quickstart
@@ -50,13 +50,15 @@ pip install -r requirements.opt.txt
 ```bash
 # cd to top of PrgEq repository 
 # Review env.sh script and adjust for your installation.
-cat env.sh
+# The script expects PrgEg and OpenNMT-py to be in $HOME/S4Eq
+# The script expect a conda environment to run in (edit for venv or other setups)
+cat env.sh   # Edit as appropriate
+source env.sh
 ```
 
 ### Step 2: Prepare new datasets if desired
 ```bash
-# cd to top of PrgEq repository 
-source ./env.sh
+cd $PrgEqDir     # From PrgEq/env.sh
 cd data/vsf4/
 # geneqv.pl randomly generates program pairs and proofs in human-readable format
 ../../src/geneqv.pl straightline.txt > raw_straight.txt 
@@ -70,8 +72,7 @@ cd data/vsf4/
 
 ### Step 3: Create base model example
 ```bash
-# cd to top of PrgEq repository 
-source ./env.sh
+cd $PrgEqDir     # From PrgEq/env.sh
 cd runs/vsf4x
 d=h8_l8_512_r18
 # onmt.sh will use OpenNMT to preprocess datasets and train model. Can take several hours with GPU system
@@ -80,8 +81,7 @@ setsid nice -n 19 onmt.sh $d > tr_$d/onmt.out 2>&1 < /dev/null
 
 ### Step 4: Attempt proofs for incremental training of base model
 ```bash
-# cd to top of PrgEq repository
-source ./env.sh
+cd $PrgEqDir     # From PrgEq/env.sh
 # Generate template programs based on GitHub dataset
 cd data
 ../src/usetemplate.pl vsf4/straightline.txt VRepair_templates.txt > vsf4_tune1/raw_template.txt
@@ -96,35 +96,64 @@ cd vsf4x/vsf4_tune1
 
 ### Step 5: Attempt proofs for incremental training of base model
 ```bash
+cd $PrgEqDir     # From PrgEq/env.sh
+cd runs/vsf4x
 # The 4 lines below can be run with i=1,2,3,4,5,6,7,8,9,10
 # on the different test program pairs. The 20 search.pl commands can be run 
 # on 20 different machines for improved throughput, or on 1 machine.
-source eq.sh ; cd vsf4x ; t=tune1 ; i=1
+t=tune1 ; i=1
 ln -s ../../data/vsf4_${t}/tune_b${i}_fullaxioms.txt ${t}_b${i}_fullaxioms.txt
 setsid nice -n 19 ../../src/search.pl 20 20 250 ${t}_b${i}_fullaxioms.txt tr_h8_l8_512_r18/model_step_100000.pt tr_h8_l8_512_r18/$t/b$i > tr_h8_l8_512_r18/$t/b$i/tune20_20.txt
 setsid nice -n 19 ../../src/search.pl 20 2 250 ${t}_b${i}_fullaxioms.txt tr_h8_l8_512_r18/model_step_100000.pt tr_h8_l8_512_r18/$t/b$i > tr_h8_l8_512_r18/$t/b$i/tune20_2.txt
 ```
 
-### Step 4: Use models
+### Step 6: Create new training data from challenging proofs
 ```bash
-# cd to top of PrgEq repository
-source ./env.sh
-cd AxiomStep10
-data_path=`/bin/pwd`
-# Doing these 4 beam widths takes under an hour on GPU system
-for i in 1 2 5 10; do ../../src/search.pl $i 99 ../../data/AxiomStep10/all_test.txt final-model_step_300000.pt > mbest_300_AxiomStep10/search$i.txt; done
+cd $PrgEqDir     # From PrgEq/env.sh
+cd runs/vsf4x/tr_h8_l8_512_r18/tune1
+# srcvaltest_findallrare.sh will process easy vs hard proofs and include rare 
+# steps (hindsight experience replay as per paper)
+../../../../src/srcvaltest_findallrare.sh
 ```
 
-### Step 5: Analyze results
+### Step 7: Train model incrementally with 4 different learning rates
 ```bash
-# cd to top of PrgEq repository
-cd runs/AxiomStep10/mbest_300_AxiomStep10
-# Note that all search*.txt results have FAIL or FOUND lines for all 10000 samples
-grep -c "^F" search*txt
-# Report number of correctly FOUND proofs for the various beam searches
-grep -c "^FOUND" search*txt
-# View the full output for all FOUND proofs
-grep "^FOUND" search*txt
+cd $PrgEqDir     # From PrgEq/env.sh
+cd runs/vsf4x/tr_h8_l8_512_r18
+# The lines below can be run with r=r18,r19,r58,r59
+# on the different test program pairs. The 4 different learning rate runs
+# can run on 4 different machines for improved throughput, or on 1 machine.
+t=tune1 ; r=r18
+# onmt_train should be found from OpenNMT
+setsid nice -n 19 onmt_train --config ${t}_$r.yaml > $t/train_$r.out 2>&1 < /dev/null
+```
+
+### Step 8: Evaluate incremental model with validation set
+```bash
+cd $PrgEqDir     # From PrgEq/env.sh
+cd runs/vsf4x
+# The lines below can be run with m=m1_r18_step_50000, m1_r58_step_30000, m1_r59_step_40000, etc
+# Typically we validated 30000, 40000, and 50000 for the 4 different learning rates.
+t=tune1; m=m1_r18_step_50000
+mkdir -p tr_h8_l8_512_r18/$t/$m
+setsid nice -n 19 ../../src/search.pl 25 10 250 all_test_fullaxioms.txt tr_h8_l8_512_r18/$m.pt tr_h8_l8_512_r18/$t/$m > tr_h8_l8_512_r18/$t/$m/search25_10.txt 2>&1 < /dev/null
+setsid nice -n 19 ../../src/search.pl 25 10 250 template_test_fullaxioms.txt tr_h8_l8_512_r18/$m.pt tr_h8_l8_512_r18/$t/$m > tr_h8_l8_512_r18/$t/$m/template25_10.txt 2>&1 < /dev/null
+# Of the 1,000 synthetic and template validation program pairs, count the number of found proofs
+grep -c FOUND tr_h8_l8_512_r18/$t/m*/*25_10.txt
+```
+
+### Iterate for model improvement using self-supervised sample selection
+Repeat steps 4 through 8 to continuously improve model
+
+### Analyze 10,000 synthetic and 10,000 GitHub sample test results
+```bash
+cd $PrgEqDir     # From PrgEq/env.sh
+cd runs/vsf4x
+t=tune6; m=m6_r58_step_40000
+setsid nice -n 19 ../../src/search.pl 50 10 250 syn_eval_fullaxioms.txt tr_h8_l8_512_r18/$m.pt tr_h8_l8_512_r18/tune6/$m > tr_h8_l8_512_r18/tune6/$m/syn50_10.txt 2>&1 < /dev/null
+setsid nice -n 19 ../../src/search.pl 50 10 250 tpl_eval_fullaxioms.txt tr_h8_l8_512_r18/$m.pt tr_h8_l8_512_r18/tune6/$m > tr_h8_l8_512_r18/tune6/$m/tpl50_10.txt 2>&1 < /dev/null
+# Count found proofs
+grep -c "^FOUND" tr_h8_l8_512_r18/tune6/$m/???50_10.txt
 ```
 
 ## FileDescriptions
@@ -133,51 +162,27 @@ The repository contains data, models, and results used for publication, but thes
 
  * ./env.sh: Environment variable setup 
 
- * src/allPossibleAxioms.pl: Provides subrouting with returns all possible axioms on an input program.
- * src/checkeq.pl: Used with WorldProof\* models to check how many test samples the model proved equivalent.
- * src/compare.py: Used with WorldProof\* models to check how many test sample outputs exactly match expected axiom proof.
- * src/geneqv.pl: Uses config files in data/geneqv*txt to generate random (P1,P2,S) samples for dataset.
- * src/genProgUsingAxioms.pl: Generates intemediate program given input program and axiom for use by AxiomStep models.
- * src/greps.sh: Counts distribution of axiom proof lengths in a file.
- * src/possibleAxioms.pl: Processes input file and prints all possible axioms for P1 samples.
- * src/pre1axiom.pl: Turns dataset with (P1,P2,S), where S may be a multi-axiom proof, into a dataset with single-axiom targets for training AxiomStep\* models.
- * src/pre2graph.pl: Turns human-readable (P1,P2,S) samples into OpenNMT GGNN input format including node feature values and edge connections.
- * src/search.pl: Search for proofs on a test set using trained AxiomStep\* model.
- * src/search_seq.pl: Adjusted version of search.pl to search using a trained sequence-to-sequence model for experimental evaluation.
- * src/srcvaltest.sh: Processes full OpenNMT dataset file to produce training, validation, and test sets.
+ * src/geneqv.pl: Uses language grammar file to generate random sample program pair for dataset.
+ * src/pre1axiom.pl: Turns dataset which may include multi-axiom proofs into a dataset with single-axiom targets for each step along the proof sequence
+ * src/pre2graph.pl: Legacy program which adds OpenNMT GGNN input format including node feature values and edge connections but also prunes program sizes as described in our paper
+ * src/srcvaltest.sh: Generates training, validation and test for dataset
+ * src/usetemplate.pl: Attempt compiler optization steps to generate program pair data from GitHub templates
+ * src/srcvaltest.sh: Generates training, validation and test for dataset
+ * src/srcvaltest_tune.sh: Generates training, validation and test using synthetic and template data for test program pairs which can be used to incrementally train model.
+ * src/search.pl: Search for proofs on a test set using trained model
+ * src/srcvaltest_findallrare.sh: Generates training, validation and test using results from proof attempts for self-supervised sample selection.
 
- * data/geneqv_\*txt: Files used by src/geneqv.pl to configure dataset generation.
- * data/KhanPlusManual: Includes test files for KhanAcademy problems and some manually generated problems used in our paper.
- * data/AxiomStep10: Includes test files for AxiomStep10 dataset described in our paper
- * data/AxiomStep5: Includes test files for AxiomStep5 dataset described in our paper
- * data/WholeProof10: Includes test files for WholeProof10 dataset described in our paper
- * data/WholeProof5: Includes test files for WholeProof5 dataset described in our paper
-
- * data/\*/all\_test.txt: Files providing OpenNMT GGNN input and target and readable P1,P2,S tuples for dataset tests.
- * data/\*/all\_test\_fullaxioms.txt: Files showing the 10000 samples and whole proof used in their generation.
- * data/\*/all\_test\_passible.txt: Files showing the 10000 samples and all possible axioms for P1.
-
- * runs/\*: 4 directories for our 4 primary models discussed in our paper.
- * runs/\*/???-train.txt are source input and target output files used for training our models.
- * runs/\*/???-val.txt are source input and target output files used for validating our models.
- * runs/\*/???-test.txt are source input and target output files used for testing our models.
- * runs/\*/srcvocab.txt: Source vocabulary including tokens for Linear Algebra math.
- * runs/\*/tgtvocab.txt: Target vocabulary including 'left', 'right', and axiom names.
- * runs/\*/OpenNMT_train.out: Output file during model training showing parameter sizes and accuracy results during training.
- * runs/\*/preprocess.sh: Calls OpenNMT preprocess step to prepare data for training.
- * runs/\*/train.sh: Calls OpenNMT training step
- * runs/\*/run.sh: Combines preprocess and training to ease batch mode training.
- * runs/WorldProof\*/translate*sh: Calls OpenNMT translate step to produce proposed whole proofs on dataset.
- * runs/AxiomStep10/final-model\_step\_300000.pt is the golden model used to find proofs in our paper.
- * runs/\*/final-model\_step\_\*.pt are the best model resulting from training twice, based on validation score.
-
- * runs/AxiomStep10/mbest_300_AxiomStep10/search10.txt: The final beam with 10 proof results used for our golden model in the paper showing 9,310 proofs found out of 10,000 tests.
- * runs/\*/mbest\*AxiomStep10: Results for testing the given model using the AxiomStep10 test dataset.
- * runs/\*/mbest\*AxiomStep5: Results for testing the given model using the AxiomStep5 test dataset.
- * runs/\*/mbest\*WholeProof10: Results for testing the given model using the WholeProof10 test dataset.
- * runs/\*/mbest\*WholeProof5: Results for testing the given model using the WholeProof5 test dataset.
- * runs/AxiomStep\*/mbest_\*/search\*: are the final proof results used for our AxiomStep\* models.
- * runs/WholeProof\*/mbest_\*/check\*: are the results of checking whether generated proofs prove equivalence on test dataset.
- * runs/WholeProof\*/mbest_\*/pass\*: are the results of checking whether generated proofs prove exactly match the test sample target proof.
-
-
+ * runs/vsf4x/onmt.sh: Run training on model while checking for alternate users on machine to allow machine sharing
+ * runs/vsf4x/tr_h8_l8_512_r18/model_step_100000.pt: The initial model trained for 100,000 steps on only synthetic pair examples the paper refers to this as M1.
+ * runs/vsf4x/tr_h8_l8_512_r18/m6_m58_step_40000.pt: This the model referred to as M7 in the paper (it is the m6 model trained with 0.00005 initial learning rate, learning_rate_decay of 0.8, and for 40,000 steps).
+ * runs/vsf4x/tr_h8_l8_512_r18/cont_r18_step_240000.pt: This is the the result of training model_step_100000.pt for an additional 240000 steps on the same synthetic examples. In the paper this is the Q model.
+ * runs/vsf4x/tr_h8_l8_512_r18/*yaml: These are the yaml files used to set up training parameters for onmt_train.
+ * runs/vsf4x/tr_h8_l8_512_r18/tune1: Intermediate files for incremental testing and training of M1 model, included as examples of results that occur as steps are followed.
+ * runs/vsf4x/tr_h8_l8_512_r18/tune6/m6_m58_step_40000/syn50_10.txt: Results for proof attempts of 10,000 held out synthetic program pairs on golden model (9,844 proofs were found).
+ * runs/vsf4x/tr_h8_l8_512_r18/tune6/m6_m58_step_40000/syn50_10.txt: Results for proof attempts of 10,000 held out GitHub template program pairs on golden model (9,688 proofs were found).
+ 
+ * data/VRepair_sourcecode.txt: 16,383 unique samples of straightline computation code mined from GitHub
+ * data/VRepair_templates.txt: 16,383 unique templates of input, temporary, and output variable computions implementing the sourcecode mined from GitHub.
+ * data/vsf4/straightline.txt: Description of our language grammar used by program pair generation scripts.
+ * data/vsf4/src-*.txt: Source files for input to transformer model.
+ * data/vsf4/tgt-*.txt: Target rewrite rule outputs for training and testing transformer model
