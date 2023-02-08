@@ -18,7 +18,17 @@ Table of Contents
 
 ## Requirements
 
-### Step 1: Install OpenNMT-py and related packages
+### Step 0: Set up miniconda, or other virtual environtment
+https://www.anaconda.com/products/distribution#linux
+
+### Step 1: Install PrgEq
+```bash
+# cd to a directory where you want to install PrgEq
+git clone https://github.com/SteveKommrusch/PrgEq.git
+```
+
+### Step 2: Install OpenNMT-py and related packages
+# cd to the parent directory of PrgEq
 Install `OpenNMT-py` from `pip`:
 ```bash
 pip install OpenNMT-py
@@ -36,12 +46,6 @@ Note: If you have MemoryError in the install try to use `pip` with `--no-cache-d
 *(Optional)* some advanced features (e.g. working audio, image or pretrained models) requires extra packages, you can install it with:
 ```bash
 pip install -r requirements.opt.txt
-```
-
-### Step 2: Install PrgEq
-```bash
-# cd to the parent directory of OpenNMT-py
-git clone https://github.com/SteveKommrusch/PrgEq.git
 ```
 
 ## Quickstart
