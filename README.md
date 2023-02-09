@@ -29,6 +29,8 @@ git clone https://github.com/SteveKommrusch/PrgEq.git
 
 ### Step 2: Install OpenNMT-py and related packages
 ```bash
+# Start up virtual environment
+conda activate
 # cd to the parent directory of PrgEq
 # Install `OpenNMT-py` :
 git clone https://github.com/OpenNMT/OpenNMT-py.git
@@ -46,12 +48,17 @@ python setup.py install
 # The script expect a conda environment to run in (edit for venv or other setups)
 cat env.sh   # Edit as appropriate
 source env.sh
+# install pytorch 
+conda install pytorch torchvision torchaudio pytorch-cuda=11.7 -c pytorch -c nvidia
+pip install --upgrade OpenNMT-py==2.0.0rc1
 ```
 
 ### Step 2: Prepare new datasets if desired
 ```bash
 cd $PrgEqDir     # From PrgEq/env.sh
-cd data/vsf4/
+cd data
+ln -s ../src .
+cd vsf4
 # geneqv.pl randomly generates program pairs and proofs in human-readable format
 ../../src/geneqv.pl straightline.txt > raw_straight.txt 
 # pre1axiom.pl creates N 1-axiom training samples for N-axiom long proofs in the raw file
@@ -65,23 +72,31 @@ cd data/vsf4/
 ### Step 3: Create base model example
 ```bash
 cd $PrgEqDir     # From PrgEq/env.sh
-cd runs/vsf4x
+cd runs
+ln -s ../src .
+cd vsf4x
 d=h8_l8_512_r18
+ln -s ../../data/vsf4/src-trainx.txt src-train.txt
+ln -s ../../data/vsf4/src-valx.txt src-val.txt
+ln -s ../../data/vsf4/src-testx.txt src-test.txt
+ln -s ../../data/vsf4/tgt-train.txt tgt-train.txt
+ln -s ../../data/vsf4/tgt-val.txt tgt-val.txt
+ln -s ../../data/vsf4/tgt-test.txt tgt-test.txt
 # onmt.sh will use OpenNMT to preprocess datasets and train model. Can take several hours with GPU system
 setsid nice -n 19 onmt.sh $d > tr_$d/onmt.out 2>&1 < /dev/null
 ```
 
-### Step 4: Attempt proofs for incremental training of base model
+### Step 4: Create propgram pairs to attempt with trained model
 ```bash
 cd $PrgEqDir     # From PrgEq/env.sh
 # Generate template programs based on GitHub dataset
 cd data
 ../src/usetemplate.pl vsf4/straightline.txt VRepair_templates.txt > vsf4_tune1/raw_template.txt
 # Repeat synthetic program pair generation from step 4
-cd vsf4x/vsf4_tune1
+cd vsf4_tune1
 ../../src/geneqv.pl straightline.txt > raw_straight.txt 
 ../../src/pre1axiom.pl 220 raw_straight.txt > pre1axiom.out
-../../src/srcvaltest.sh all_straight.txt
+../../src/pre2graph.pl < pre1axiom.out > all_straight.txt
 # Create 10 sets of 10,000 program pairs for proof attempts
 ../../src/srcvaltest_tune.sh
 ```
