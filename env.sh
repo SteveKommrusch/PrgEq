@@ -1,4 +1,4 @@
-conda activate pytorch
+conda activate
 export CUDA_VISIBLE_DEVICES=0
 export THC_CACHING_ALLOCATOR=0
 export PrgEqDir=$HOME/S4Eq/PrgEq

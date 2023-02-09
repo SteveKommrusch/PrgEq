@@ -28,24 +28,12 @@ git clone https://github.com/SteveKommrusch/PrgEq.git
 ```
 
 ### Step 2: Install OpenNMT-py and related packages
+```bash
 # cd to the parent directory of PrgEq
-Install `OpenNMT-py` from `pip`:
-```bash
-pip install OpenNMT-py
-```
-
-or from the sources:
-```bash
+# Install `OpenNMT-py` :
 git clone https://github.com/OpenNMT/OpenNMT-py.git
 cd OpenNMT-py
 python setup.py install
-```
-
-Note: If you have MemoryError in the install try to use `pip` with `--no-cache-dir`.
-
-*(Optional)* some advanced features (e.g. working audio, image or pretrained models) requires extra packages, you can install it with:
-```bash
-pip install -r requirements.opt.txt
 ```
 
 ## Quickstart
