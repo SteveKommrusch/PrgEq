@@ -5,10 +5,44 @@ use warnings;
 
 # Define commonly-used subroutine that returns all possible axioms given an input program
 
+sub FindPath {
+    my $stm = $_[0];
+    my $var = $_[1];
+    my $path = "";
+
+    $stm =~ s/^(.*)= //;
+    $stm =~ s/ +$//;
+    if ($stm eq $var) {
+       return "";
+    }
+    $stm =~ s/ $var .*$/ /;
+    while ($stm =~ s/\( [^()]+ \) /Token /g) {
+        # Loop removes trees
+    }
+    while ($stm =~ s/^\( \S+ //) {
+        if ($stm =~ s/^[^()]\S* //) {
+            $path .= "r"
+        } else {
+            $path .= "l"
+        }
+    }
+    return $path;
+}
+
 sub AllPossibleAxioms {
     my $progA = $_[0];
     my $stmnum = $_[1];
     my $path = $_[2];
+    my $tmpscalar="";
+    my $tmpvector="";
+    my $tmpmatrix="";
+    if ($_[3]) {
+      # Optional tmp variables
+      $_[3] =~/Scalar:(.*) Vector:(.*) Matrix:(.*)$/ || die "Bad syntax for tmp variables: $_[3]";
+      $tmpscalar=$1;
+      $tmpvector=$2;
+      $tmpmatrix=$3;
+    }
 
     my $op = "";
     my $leftop="";
@@ -39,11 +73,10 @@ sub AllPossibleAxioms {
             my $rhs = $3;
             if ($eqPrev && ! ($rhsPrev =~ /$lhs/) && ! ($stmA =~ /$lhsPrev/)) {
                 $transform .= "stm$stmnum Swapprev ";
-            } else {
-                $lhsPrev = $lhs;
-                $eqPrev = $eq;
-                $rhsPrev = $rhs;
             }
+            $lhsPrev = $lhs;
+            $eqPrev = $eq;
+            $rhsPrev = $rhs;
             $stmnum++;
         }
 
@@ -59,6 +92,11 @@ sub AllPossibleAxioms {
                     $transform .= "stm$stmnum Inline $var ";
                 }
             }
+            foreach my $var (keys %vars) {
+                if ($vars{$var} =~/$lhs/) {
+                    delete $vars{$var};
+                }
+            }
             if (! ($rhs =~/\(.*\(.*\(/) && $eq ne "===" && ! ($rhs =~/$lhs/)) {
                 $vars{$lhs}=$rhs;
             } else {
@@ -67,7 +105,6 @@ sub AllPossibleAxioms {
             $stmnum++;
         }
 
-        %vars=();
         my $progB = $progA;
         $stmnum=1;
         while ($progB =~ s/^([^;]+); //) {
@@ -86,20 +123,20 @@ sub AllPossibleAxioms {
         my %expr=();
         foreach my $stmA (split /;/,$progA) {
             $stmA =~ s/^\s*\S+ =+ //;
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) \( ([^()]+) \) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) \( ([^()]+) \) \)//) {
                 $expr{"$1 ( $2 ) ( $3 )"}+=6;
                 $expr{$2}+=3;
                 $expr{$3}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) ([^()]+) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) ([^()]+) \)//) {
                 $expr{"$1 ( $2 ) $3"}+=5;
                 $expr{$2}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \( ([^()]+) \) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \( ([^()]+) \) \)//) {
                 $expr{"$1 ( $2 )"}+=4;
                 $expr{$2}+=3;
             }
-            while ($stmA =~s/ \( ([^()]+) \)/ ( )/) {
+            while ($stmA =~s/\( ([^()]+) \)//) {
                 $expr{$1}+=3;
             }
         }
@@ -109,10 +146,35 @@ sub AllPossibleAxioms {
             $stmA = $1;
             foreach my $key (keys %expr) {
                 if (0.01 < (1.0-6.0/$expr{$key})) {
-                    if (! ($stmA =~/= \( \Q$key\E \) *$/) && ($stmA =~ /\( \Q$key\E \)/)) {
-                        $key=~tr/[A-Z] /[a-z]_/;
-                        $transform .= "stm$stmnum Newtmp path $key ";
+                    my $vars="";
+                    $key =~/^\S+s/ && ($vars=$tmpscalar);
+                    $key =~/^\S+v/ && ($vars=$tmpvector);
+                    $key =~/^\S+m/ && ($vars=$tmpmatrix);
+                    foreach my $var (split / /,$vars) {
+                        if ($stmA =~ s/\( \Q$key\E \)/$var/g) {
+                            my $path = FindPath($stmA,$var);
+                            $transform .= "stm$stmnum Newtmp N$path $var ";
+                        }
                     }
+                }
+            }
+            $stmnum++;
+        }
+
+        # Possibly rename a variable
+        my $vars="";
+        $stmnum=1;
+        foreach my $stmA (split /;/,$progA) {
+            $stmA =~/^\s*(\S+) (=+) (\S.*\S) *$/ || next;
+            my $lhs = $1;
+            my $eq = $2; 
+            my $rhs = $3;
+            if ($eq eq "=") {
+                $lhs =~/^s/ && ($vars=$tmpscalar);
+                $lhs =~/^v/ && ($vars=$tmpvector);
+                $lhs =~/^m/ && ($vars=$tmpmatrix);
+                foreach my $var (split / /,$vars) {
+                    $transform .= "stm$stmnum Rename $var ";
                 }
             }
             $stmnum++;
@@ -153,7 +215,13 @@ sub AllPossibleAxioms {
         return $transform;
     }
 
-    $progA =~s/^\( (\S+) // || return "";
+    $transform .= "stm$stmnum Multone $path ";
+    $transform .= "stm$stmnum Addzero $path ";
+    if ($progA =~/^s\d/ || $progA=~/^\ds/ || $progA=~/^\( \S+s /) {
+        $transform .= "stm$stmnum Divone $path ";
+    }
+    $transform .= "stm$stmnum Subzero $path ";
+    $progA =~s/^\( (\S+) // || return $transform;
     $op = $1;
     if ($progA =~s/^\( (\S+) //) {
         $in=1;
@@ -395,10 +463,20 @@ sub AllPossibleAxioms {
         $transform .= "stm$stmnum Flipleft ${path} ";
     }
 
-    if ((($op eq "-s" && $rightop =~/[\-n]s/) ||
-         ($op eq "/s" && $rightop =~/[\/i]s/) ||
-         ($op eq "-m" && $rightop =~/[\-n]m/) ||
-         ($op eq "-v" && $rightop =~/[\-n]v/))) {
+    if ((($op eq "-s") ||
+                         ($op eq "/s") ||
+                         ($op eq "-m") ||
+                         ($op eq "-v")) && ($rightop eq $op)) {
+        $transform .= "stm$stmnum Flipright ${path} ";
+    }
+    if ((($op eq "+s") ||
+                         ($op eq "*s") ||
+                         ($op eq "+m") ||
+                         ($op eq "+v") ||
+             (($rightop ne $op) && (($op eq "-s") ||
+                                     ($op eq "/s") ||
+                                     ($op eq "-m") ||
+                                     ($op eq "-v"))))) {
         $transform .= "stm$stmnum Flipright ${path} ";
     }
     if ($op eq "*m") {
