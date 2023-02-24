@@ -69,6 +69,17 @@ cd vsf4
 ../../src/srcvaltest.sh all_straight.txt
 ```
 
+### Step 2b: Generate template data from VRepair github data
+```bash
+cd $PrgEqDir/..     # From PrgEq/env.sh
+git clone https://github.com/chenzimin/VRepair.git
+cd VRepair/data/Full
+# gentemplate.pl processes files into a form of compiler IR (Intermediate Representation)
+$PrgEqDir/src/gentemplate.pl > $PrgEqDir/data/DBG_VRepair_templates.txt
+cd $PrgEqDir/data
+grep "^ t1" $PrgEqDir/data/DBG_VRepair_templates.txt | sort -u | shuf > $PrgEqDir/data/VRepair_templates.txt 
+```
+
 ### Step 3: Create base model example
 ```bash
 cd $PrgEqDir     # From PrgEq/env.sh
@@ -174,6 +185,7 @@ The repository contains data, models, and results used for publication, but thes
  * src/pre2graph.pl: Legacy program which adds OpenNMT GGNN input format including node feature values and edge connections but also prunes program sizes as described in our paper
  * src/srcvaltest.sh: Generates training, validation and test for dataset
  * src/usetemplate.pl: Attempt compiler optization steps to generate program pair data from GitHub templates
+ * src/gentemplate.pl: Generate templates from VRepair/data/full samples 
  * src/srcvaltest.sh: Generates training, validation and test for dataset
  * src/srcvaltest_tune.sh: Generates training, validation and test using synthetic and template data for test program pairs which can be used to incrementally train model.
  * src/search.pl: Search for proofs on a test set using trained model
