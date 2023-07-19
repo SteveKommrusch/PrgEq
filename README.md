@@ -5,7 +5,17 @@ create axiomatic proofs of equivalence. We use self-supervised sample selection 
 the model; a technique in which proof attempts can be used to train the model to improve itself.
 Included are scripts which generate test and training data, as well as data mined from GitHub.
 
-  * Our paper detailing the use and testing of S4Eq is on ArXiv at: https://arxiv.org/abs/2109.10476
+Our paper detailing the use and testing of S4Eq is published in IEEE Transactions on Software Engineering.
+
+```bibtex
+@article{2109.10476,
+ title = {Self-Supervised Learning to Prove Equivalence Between Straight-Line Programs via Rewrite Rules},
+ journal = {IEEE Transactions on Software Engineering},
+ year = {2023},
+ doi = {10.1109/TSE.2023.3271065},
+ author = {Steve Kommrusch and Martin Monperrus and Louis-Noël Pouchet},
+}
+```
   * src/ includes scripts used to generate training data and search for proofs using our trained model. Note: These scripts use slightly different axiom names than in the paper; in particular, Noop, Double, and Multzero are used in the code which correspond to NeutralOp, DoubleOp, and AbsorbOp in the paper.
   * data/ includes our dataset generation configuration files, raw data from GitHub program samples, our evaluation program pairs, etc.
   * runs/ includes results for models presented in our paper. In particular, runs/vfs4x/tr_h8_l8_512_r18 are our golden model and results for our model with 8 heads, 8 transformer layers, vector size 512, with a final iterative learning rate starting at 0.00005 and a final learning rate decay of 0.8.
